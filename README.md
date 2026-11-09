@@ -1,9 +1,16 @@
 # dark-art-gallery-starter
 
-A static site template for artists who sell original paintings online.  
-No framework. No build step. All CDN. Deploy to Cloudflare Pages in minutes.
+A complete website template for independent artists who sell original work directly — no gallery, no middleman, no Shopify fees.
 
-**Live on melancholija.com** — this stack powers a real independent art gallery.
+Built for the specific needs of a fine art shop:
+
+- **Paintings deserve presence.** WebGL hover distortion (curtains.js) and film grain make images feel physical, not digital. The work looks different here than it does on a marketplace.
+- **Originals are one-of-a-kind.** The sold tracking system marks a painting as sold the moment an order is placed — no manual updates, no double-selling.
+- **Artists shouldn't pay per-transaction fees.** The checkout supports bank transfer for high-value works (no card processing fee) and PayPal for smaller ones — your choice, your threshold.
+- **Data drift kills maintenance.** One `data/artworks.js` file feeds the gallery, detail pages, and checkout simultaneously. Add a painting once; it shows up everywhere.
+- **No lock-in.** Static HTML + Cloudflare Pages. No CMS subscription, no platform dependency. You own the files. Move host in an afternoon.
+
+No framework. No build step. All CDN. Deploy to Cloudflare Pages in minutes.
 
 ---
 
