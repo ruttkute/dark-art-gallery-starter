@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — Your Studio Name</title>
+  <link rel="stylesheet" href="css/base.css">
+
+  <style>
+    .checkout-page {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 100px var(--gutter) 80px;
+    }
+
+    .checkout-page h1 {
+      font-family: var(--serif);
+      font-size: 2rem;
+      font-style: italic;
+      font-weight: 300;
+      margin-bottom: 48px;
+    }
+
+    /* Order summary sidebar */
+    .order-summary {
+      background: rgba(28,27,24,0.03);
+      padding: 32px;
+      position: sticky;
+      top: 32px;
+    }
+
+    .order-summary__title {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .order-item {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .order-item img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .order-item__title {
+      font-family: var(--serif);
+      font-size: 1rem;
+      font-style: italic;
+    }
+
+    .order-item__size {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .order-totals {
+      border-top: 1px solid var(--border);
+      margin-top: 24px;
+      padding-top: 20px;
+    }
+
+    .order-totals__row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .order-totals__row.is-total {
+      font-family: var(--serif);
+      font-size: 1.1rem;
+      color: var(--fg);
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .order-totals__row.is-discount {
+      color: var(--accent);
+    }
+
+    /* Success + error states */
+    .payment-result {
+      display: none;
+      padding: 32px;
+      border: 1px solid var(--border);
+      margin-top: 32px;
+    }
+
+    .payment-result.is-visible { display: block; }
+
+    .payment-result h2 {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: 300;
+      margin-bottom: 16px;
+    }
+
+    .payment-result__detail {
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .payment-result__detail strong { color: var(--fg); }
+
+    .iban-block {
+      font-family: var(--sans);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      padding: 12px 16px;
+      background: rgba(28,27,24,0.04);
+      display: inline-block;
+      margin: 8px 0;
+    }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .form-row-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Film grain overlay -->
+  <svg class="grain" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <filter id="grain-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#grain-filter)"/>
+  </svg>
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__logo">Your Studio</a>
+    <ul class="site-nav__links" role="list">
+      <li><a href="gallery.html">Paintings</a></li>
+    </ul>
+  </nav>
+
+  <main class="checkout-page">
+    <a href="javascript:history.back()" class="back-link" style="display:inline-flex;gap:8px;align-items:center;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:32px;">
+      ← Back
+    </a>
+
+    <h1>Checkout</h1>
+
+    <div class="checkout-layout">
+
+      <!-- Left: Form -->
+      <div>
+        <form class="checkout-form" id="checkout-form" novalidate>
+
+          <p class="section-label" style="margin-bottom:20px;">Your details</p>
+
+          <div class="form-row-2">
+            <div class="field">
+              <label for="firstName">First name</label>
+              <input type="text" id="firstName" name="firstName" required autocomplete="given-name">
+            </div>
+            <div class="field">
+              <label for="lastName">Last name</label>
+              <input type="text" id="lastName" name="lastName" required autocomplete="family-name">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required autocomplete="email">
+          </div>
+
+          <div class="field">
+            <label for="address">Street address</label>
+            <input type="text" id="address" name="address" required autocomplete="street-address">
+          </div>
+
+          <div class="form-row-2">
+            <div class="field">
+              <label for="city">City</label>
+              <input type="text" id="city" name="city" required autocomplete="address-level2">
+            </div>
+            <div class="field">
+              <label for="postal">Postal code</label>
+              <input type="text" id="postal" name="postal" required autocomplete="postal-code">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="country">Country</label>
+            <select id="country" name="country" required autocomplete="country">
+              <option value="">Select country</option>
+              <option value="LT">Lithuania</option>
+              <option value="LV">Latvia</option>
+              <option value="EE">Estonia</option>
+              <option value="PL">Poland</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="NL">Netherlands</option>
+              <option value="BE">Belgium</option>
+              <option value="AT">Austria</option>
+              <option value="CH">Switzerland</option>
+              <option value="IT">Italy</option>
+              <option value="ES">Spain</option>
+              <option value="SE">Sweden</option>
+              <option value="NO">Norway</option>
+              <option value="DK">Denmark</option>
+              <option value="FI">Finland</option>
+              <option value="CZ">Czech Republic</option>
+              <option value="SK">Slovakia</option>
+              <option value="HU">Hungary</option>
+              <option value="RO">Romania</option>
+              <option value="BG">Bulgaria</option>
+              <option value="HR">Croatia</option>
+              <option value="SI">Slovenia</option>
+              <option value="PT">Portugal</option>
+              <option value="GR">Greece</option>
+              <option value="IE">Ireland</option>
+              <option value="GB">United Kingdom</option>
+              <option value="US">United States</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="OTHER">Other country</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="note">Note (optional)</label>
+            <input type="text" id="note" name="note" placeholder="Gift message, special instructions…">
+          </div>
+
+          <button type="submit" class="btn-primary" id="submit-btn" style="width:100%;margin-top:8px;">
+            Place order
+          </button>
+
+          <p id="form-error" role="alert" style="display:none;color:var(--accent);font-size:13px;margin-top:12px;"></p>
+
+        </form>
+
+        <!-- Payment result — shown after order is placed -->
+        <div class="payment-result" id="payment-result" aria-live="polite">
+          <h2 id="result-heading"></h2>
+          <div class="payment-result__detail" id="result-detail"></div>
+        </div>
+      </div>
+
+      <!-- Right: Order summary -->
+      <div class="order-summary">
+        <p class="order-summary__title">Your order</p>
+        <div id="order-items"></div>
+        <div class="order-totals" id="order-totals"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2024 Your Studio. All rights reserved.</p>
+  </footer>
+
+  <script src="data/artworks.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    const API_BASE = 'https://your-worker.your-name.workers.dev';
+
+    const SHIPPING_RATES = {
+      LT:8, LV:5, EE:5, PL:8, DE:10, FR:10, NL:10, BE:10,
+      AT:10, CH:12, IT:10, ES:12, SE:12, NO:15, DK:12, FI:12,
+      CZ:10, SK:10, HU:10, RO:12, BG:12, HR:12, SI:10, PT:12,
+      GR:12, IE:12, GB:15, US:25, CA:28, AU:32, OTHER:30,
+    };
+
+    // ── Parse cart from URL ───────────────────────────────────────────────────
+    function parseCart() {
+      try {
+        const raw = new URLSearchParams(window.location.search).get('cart');
+        if (!raw) return [];
+        return JSON.parse(decodeURIComponent(raw));
+      } catch { return []; }
+    }
+
+    const cart = parseCart();
+
+    // ── Totals ────────────────────────────────────────────────────────────────
+    function calcTotals(country) {
+      const subtotal = cart.reduce((s, i) => s + (Number(i.price) || 0), 0);
+      const n = cart.length;
+      const discount = n >= 3
+        ? Math.round(subtotal * 0.15)
+        : n >= 2 ? Math.round(subtotal * 0.10) : 0;
+      const shipping = country ? (SHIPPING_RATES[country] ?? SHIPPING_RATES.OTHER) : 0;
+      return { subtotal, discount, shipping, total: subtotal - discount + shipping };
+    }
+
+    // ── Render summary ────────────────────────────────────────────────────────
+    function renderSummary(country) {
+      const { subtotal, discount, shipping, total } = calcTotals(country);
+
+      document.getElementById('order-items').innerHTML = cart.map(item => `
+        <div class="order-item">
+          ${item.image ? `<img src="${item.image}" alt="${item.title}">` : ''}
+          <div>
+            <p class="order-item__title">${item.title}</p>
+            <p class="order-item__size">${item.size || ''}</p>
+          </div>
+          <p style="margin-left:auto;font-size:13px;">€${item.price}</p>
+        </div>
+      `).join('');
+
+      let totalsHtml = `
+        <div class="order-totals__row">
+          <span>Subtotal</span><span>€${subtotal}</span>
+        </div>
+      `;
+      if (discount > 0) totalsHtml += `
+        <div class="order-totals__row is-discount">
+          <span>Multi-work discount</span><span>−€${discount}</span>
+        </div>
+      `;
+      if (country) totalsHtml += `
+        <div class="order-totals__row">
+          <span>Shipping</span><span>€${shipping}</span>
+        </div>
+      `;
+      totalsHtml += `
+        <div class="order-totals__row is-total">
+          <span>Total</span><span>€${total}${!country ? '*' : ''}</span>
+        </div>
+        ${!country ? '<p style="font-size:11px;color:var(--muted);margin-top:8px;">* shipping calculated on country selection</p>' : ''}
+      `;
+
+      document.getElementById('order-totals').innerHTML = totalsHtml;
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    if (!cart.length) {
+      document.getElementById('checkout-form').style.display = 'none';
+      document.querySelector('.order-summary').innerHTML =
+        '<p style="color:var(--muted);font-size:14px;">Your cart is empty.</p>';
+    } else {
+      renderSummary(null);
+    }
+
+    document.getElementById('country').addEventListener('change', e => {
+      renderSummary(e.target.value);
+    });
+
+    // ── Submit ────────────────────────────────────────────────────────────────
+    document.getElementById('checkout-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const errEl = document.getElementById('form-error');
+      errEl.style.display = 'none';
+
+      const form = e.target;
+      const country = form.country.value;
+      if (!country) {
+        errEl.textContent = 'Please select your country.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      btn.textContent = 'Placing order…';
+      btn.disabled = true;
+
+      const customer = {
+        firstName: form.firstName.value.trim(),
+        lastName:  form.lastName.value.trim(),
+        email:     form.email.value.trim(),
+        address:   form.address.value.trim(),
+        city:      form.city.value.trim(),
+        postal:    form.postal.value.trim(),
+        note:      form.note?.value.trim() || '',
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/api/checkout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customer, cart, country }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Order failed');
+
+        form.style.display = 'none';
+
+        const result = document.getElementById('payment-result');
+        result.classList.add('is-visible');
+
+        if (data.method === 'paypal') {
+          document.getElementById('result-heading').textContent = 'Complete your payment';
+          document.getElementById('result-detail').innerHTML = `
+            <p>Order reference: <strong>${data.orderRef}</strong></p>
+            <p style="margin-top:12px;">
+              You will be redirected to PayPal to pay
+              <strong>€${data.total}</strong>.
+            </p>
+            <p style="margin-top:16px;">
+              <a href="https://www.paypal.com/paypalme/YOUR_PAYPAL_HANDLE/${data.total}EUR"
+                 class="btn-primary" target="_blank" rel="noopener">
+                Pay via PayPal →
+              </a>
+            </p>
+          `;
+        } else {
+          document.getElementById('result-heading').textContent = 'Order confirmed';
+          document.getElementById('result-detail').innerHTML = `
+            <p>Order reference: <strong>${data.orderRef}</strong></p>
+            <p style="margin-top:12px;">
+              Please transfer <strong>€${data.total}</strong> to:
+            </p>
+            <p class="iban-block">${data.iban}</p>
+            <p style="margin-top:4px;">Beneficiary: <strong>${data.beneficiary}</strong></p>
+            <p style="font-size:12px;color:var(--muted);margin-top:16px;">
+              Use your order reference as the payment description.<br>
+              Your painting will be shipped once payment is received.
+            </p>
+          `;
+        }
+      } catch (err) {
+        errEl.textContent = err.message || 'Something went wrong. Please try again.';
+        errEl.style.display = 'block';
+        btn.textContent = 'Place order';
+        btn.disabled = false;
+      }
+    });
+
+    // ── Lenis ─────────────────────────────────────────────────────────────────
+    const lenis = new Lenis({ lerp: 0.08 });
+    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+  </script>
+
+</body>
+</html>

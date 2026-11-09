@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paintings — Your Studio Name</title>
+  <link rel="stylesheet" href="css/base.css">
+
+  <style>
+    .page-header {
+      padding: 120px var(--gutter) 48px;
+    }
+
+    .page-header h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-style: italic;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+    }
+
+    .gallery-container {
+      padding: 0 var(--gutter) clamp(80px, 10vw, 140px);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    /* WebGL canvas — curtains.js positions its planes over the page via this */
+    #curtains-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* When WebGL is active, painting images become invisible
+       (curtains.js WebGL plane sits on top) */
+    body.webgl-active .painting-card img {
+      opacity: 0;
+    }
+
+    /* Fallback label — hidden normally, shown if WebGL not available */
+    .webgl-unavailable-notice {
+      display: none;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      padding: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Film grain overlay -->
+  <svg class="grain" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <filter id="grain-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#grain-filter)"/>
+  </svg>
+
+  <!-- WebGL canvas — curtains.js renders into this -->
+  <div id="curtains-canvas" aria-hidden="true"></div>
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__logo">Your Studio</a>
+    <ul class="site-nav__links" role="list">
+      <li><a href="gallery.html" aria-current="page">Paintings</a></li>
+      <li><a href="index.html#about">About</a></li>
+    </ul>
+  </nav>
+
+  <header class="page-header">
+    <p class="section-label" style="margin-bottom:16px;">Original paintings</p>
+    <h1>Works</h1>
+  </header>
+
+  <main class="gallery-container">
+    <div class="painting-grid" id="painting-grid" role="list">
+      <!-- Cards rendered by JS from data/artworks.js -->
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2024 Your Studio. All rights reserved.</p>
+  </footer>
+
+  <!-- Shared artwork data — sets window.ARTWORKS -->
+  <script src="data/artworks.js"></script>
+
+  <!-- curtains.js — WebGL hover distortion via GLSL shaders (optional) -->
+  <!-- Docs: https://www.curtainsjs.com -->
+  <!-- Toggle ENABLE_WEBGL below to disable if not needed -->
+  <script src="https://cdn.jsdelivr.net/npm/curtainsjs@8.1.6/dist/curtains.umd.min.js"></script>
+
+  <!-- Lenis smooth scroll -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+
+  <script>
+    // ─── Config ───────────────────────────────────────────────────────────────
+    // Set to false to disable WebGL entirely (falls back to CSS hover)
+    const ENABLE_WEBGL = true;
+
+    // Worker API base URL — set to your Cloudflare Worker URL after deploy
+    // Local dev: use 'http://localhost:8787' (wrangler dev)
+    const API_BASE = 'https://your-worker.your-name.workers.dev';
+
+    // ─── State ────────────────────────────────────────────────────────────────
+    const likedSlugs = new Set(
+      JSON.parse(localStorage.getItem('liked-slugs') || '[]')
+    );
+    const soldSlugs = new Set();
+    let likeCounts = {};
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
+    async function init() {
+      // Load like counts + sold status in parallel
+      const [countsRes, soldRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/api/counts`).then(r => r.json()).catch(() => []),
+        fetch(`${API_BASE}/api/sold`).then(r => r.json()).catch(() => []),
+      ]);
+
+      if (countsRes.status === 'fulfilled') {
+        countsRes.value.forEach(row => { likeCounts[row.slug] = row.count; });
+      }
+      if (soldRes.status === 'fulfilled') {
+        soldRes.value.forEach(slug => soldSlugs.add(slug));
+      }
+
+      renderGallery();
+
+      if (ENABLE_WEBGL) {
+        initWebGL();
+      }
+    }
+
+    // ─── Render gallery cards ─────────────────────────────────────────────────
+    function renderGallery() {
+      const grid = document.getElementById('painting-grid');
+      const artworks = window.ARTWORKS.filter(a => a.available !== false);
+
+      grid.innerHTML = artworks.map(artwork => {
+        const sold = soldSlugs.has(artwork.slug);
+        const count = likeCounts[artwork.slug] || 0;
+        const liked = likedSlugs.has(artwork.slug);
+        const img = artwork.images[0] || '';
+
+        return `
+          <article class="painting-card" role="listitem">
+            <a href="artwork-detail.html?slug=${artwork.slug}" class="painting-card__image-wrap"
+               aria-label="View ${artwork.title}">
+              <img src="${img}" alt="${artwork.title}" loading="lazy"
+                   data-slug="${artwork.slug}">
+              ${sold ? '<div class="sold-badge" aria-label="Sold">SOLD</div>' : ''}
+            </a>
+            <div class="painting-card__info">
+              <div>
+                <p class="painting-card__title">${artwork.title}</p>
+                <button class="like-btn ${liked ? 'is-liked' : ''}"
+                        data-slug="${artwork.slug}"
+                        aria-label="${liked ? 'Unlike' : 'Like'} ${artwork.title}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M12 21C12 21 3 13.5 3 8a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-9 13-9 13z"/>
+                  </svg>
+                  <span class="like-count">${count || ''}</span>
+                </button>
+              </div>
+              ${!sold ? `<p class="painting-card__price">€${artwork.price}</p>` : ''}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      // Attach like button listeners
+      grid.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', handleLike);
+      });
+    }
+
+    // ─── Like handler ─────────────────────────────────────────────────────────
+    async function handleLike(e) {
+      const btn = e.currentTarget;
+      const slug = btn.dataset.slug;
+      const nowLiked = !likedSlugs.has(slug);
+
+      // Optimistic UI
+      btn.classList.toggle('is-liked', nowLiked);
+      const countEl = btn.querySelector('.like-count');
+      const current = parseInt(countEl.textContent) || 0;
+      countEl.textContent = nowLiked ? current + 1 : Math.max(0, current - 1) || '';
+
+      if (nowLiked) likedSlugs.add(slug);
+      else likedSlugs.delete(slug);
+
+      try {
+        localStorage.setItem('liked-slugs', JSON.stringify([...likedSlugs]));
+      } catch {}
+
+      try {
+        const res = await fetch(`${API_BASE}/api/like/${slug}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ liked: nowLiked }),
+        });
+        const data = await res.json();
+        countEl.textContent = data.count || '';
+      } catch {}
+    }
+
+    // ─── Lenis smooth scroll ──────────────────────────────────────────────────
+    const lenis = new Lenis({ lerp: 0.08 });
+    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+    window.__lenis = lenis;
+
+    // ─── curtains.js WebGL hover distortion ───────────────────────────────────
+    // Each painting card gets a WebGL plane that displaces on mouse hover.
+    // Falls back silently to CSS transform if WebGL is unavailable.
+    //
+    // Shader: vertex distortion driven by mouse proximity and a sine wave.
+    // The closer the cursor, the more the mesh vertices bend.
+    function initWebGL() {
+      const vs = `
+        precision mediump float;
+        attribute vec3 aVertexPosition;
+        attribute vec2 aTextureCoord;
+        uniform mat4 uMVMatrix;
+        uniform mat4 uPMatrix;
+        uniform mat2 uTextureMatrix0;
+        varying vec3 vVertexPosition;
+        varying vec2 vTextureCoord;
+        uniform float uTime;
+        uniform vec2 uMousePos;   /* 0–1 UV coordinates */
+        uniform float uIntensity; /* 0 = no distortion, 1 = full */
+
+        void main() {
+          vec3 pos = aVertexPosition;
+          float dist = distance(aTextureCoord, uMousePos);
+          /* Ripple: sin wave from mouse center, decaying with distance */
+          pos.z += sin(dist * 25.0 - uTime * 2.0) * 0.04 * uIntensity * max(0.0, 1.0 - dist * 2.5);
+          gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);
+          vTextureCoord = (uTextureMatrix0 * aTextureCoord.st).xy;
+          vVertexPosition = pos;
+        }
+      `;
+
+      const fs = `
+        precision mediump float;
+        varying vec3 vVertexPosition;
+        varying vec2 vTextureCoord;
+        uniform sampler2D uSampler0;
+
+        void main() {
+          gl_FragColor = texture2D(uSampler0, vTextureCoord);
+        }
+      `;
+
+      let curtains;
+      try {
+        curtains = new Curtains({ container: 'curtains-canvas', autoResize: true });
+
+        // If Curtains fails to get a WebGL context, it fires an error
+        curtains.onError(() => {
+          console.warn('curtains.js: WebGL not available — using CSS hover');
+        });
+
+        document.body.classList.add('webgl-active');
+      } catch (e) {
+        console.warn('curtains.js init failed:', e);
+        return;
+      }
+
+      const artworkImgs = document.querySelectorAll('.painting-card__image-wrap img');
+      let time = 0;
+
+      artworkImgs.forEach(img => {
+        const plane = curtains.addPlane(img, {
+          vertexShader: vs,
+          fragmentShader: fs,
+          widthSegments: 20,
+          heightSegments: 20,
+          uniforms: {
+            time:      { name: 'uTime',      type: '1f', value: 0 },
+            mousePos:  { name: 'uMousePos',  type: '2f', value: [0.5, 0.5] },
+            intensity: { name: 'uIntensity', type: '1f', value: 0 },
+          },
+        });
+
+        if (!plane) return;
+
+        const wrap = img.closest('.painting-card__image-wrap');
+
+        // Animate intensity on hover
+        let targetIntensity = 0;
+        let currentIntensity = 0;
+
+        wrap.addEventListener('mouseenter', () => { targetIntensity = 1; });
+        wrap.addEventListener('mouseleave', () => { targetIntensity = 0; });
+
+        wrap.addEventListener('mousemove', e => {
+          const rect = wrap.getBoundingClientRect();
+          plane.uniforms.mousePos.value = [
+            (e.clientX - rect.left) / rect.width,
+            1 - (e.clientY - rect.top) / rect.height,
+          ];
+        });
+
+        plane.onRender(() => {
+          time += 0.015;
+          currentIntensity += (targetIntensity - currentIntensity) * 0.07;
+          plane.uniforms.time.value = time;
+          plane.uniforms.intensity.value = currentIntensity;
+        });
+      });
+    }
+
+    // ─── Start ────────────────────────────────────────────────────────────────
+    init();
+  </script>
+
+</body>
+</html>

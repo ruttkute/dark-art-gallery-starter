@@ -1,0 +1,6 @@
+.DS_Store
+node_modules/
+_worker/.wrangler/
+_worker/wrangler.toml
+.env
+*.local

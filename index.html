@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Studio Name</title>
+  <meta name="description" content="Original oil paintings.">
+  <link rel="stylesheet" href="css/base.css">
+
+  <!-- Splitting.js — char-level CSS vars for stagger text reveals -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/splitting@1.0.6/dist/splitting.css">
+
+  <style>
+    /* ── Hero ───────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 var(--gutter) clamp(40px, 6vw, 80px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero__bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        160deg,
+        #e8e4de 0%,
+        #d8d0c8 40%,
+        #c4b8b0 100%
+      );
+      z-index: 0;
+    }
+
+    /* Replace .hero__bg gradient with an actual painting image:
+       background: url('images/hero.jpg') center/cover no-repeat;  */
+
+    .hero__content {
+      position: relative;
+      z-index: 1;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hero__label {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+      /* Splitting reveal: words appear sequentially */
+      overflow: hidden;
+    }
+
+    .hero__title {
+      font-family: var(--serif);
+      font-size: clamp(4rem, 11vw, 10rem);
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: 0.03em;
+      line-height: 0.92;
+      color: var(--fg);
+    }
+
+    /* Splitting.js generates spans.char — we stagger via --char-index CSS var */
+    .hero__title .char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(0.15em);
+      animation: hero-char-in 0.7s var(--ease-out) forwards;
+      animation-delay: calc(var(--char-index) * 0.018s + 0.1s);
+    }
+
+    @keyframes hero-char-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero__sub {
+      font-family: var(--sans);
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 28px;
+      opacity: 0;
+      animation: fade-up 0.6s var(--ease-out) 0.8s forwards;
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero__scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      right: var(--gutter);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      writing-mode: vertical-rl;
+      opacity: 0;
+      animation: fade-up 0.6s var(--ease-out) 1.2s forwards;
+    }
+
+    /* ── Spaces Section ─────────────────────────────────────────────────── */
+    .spaces {
+      padding: clamp(80px, 10vw, 140px) var(--gutter);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    .spaces__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: clamp(32px, 4vw, 56px);
+    }
+
+    .spaces__heading {
+      font-family: var(--serif);
+      font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+      font-style: italic;
+      font-weight: 300;
+      max-width: 18ch;
+      line-height: 1.1;
+    }
+
+    .spaces__grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .spaces__card {
+      overflow: hidden;
+      aspect-ratio: 4/5;
+      background: var(--border);
+    }
+
+    .spaces__card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.7s var(--ease-out);
+    }
+
+    .spaces__card:hover img { transform: scale(1.04); }
+
+    /* ── About Section ──────────────────────────────────────────────────── */
+    .about {
+      padding: clamp(80px, 10vw, 140px) var(--gutter);
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .about__quote {
+      font-family: var(--serif);
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.4;
+      color: var(--fg);
+      margin-bottom: 40px;
+    }
+
+    .about__body {
+      font-size: 15px;
+      line-height: 1.85;
+      color: var(--fg);
+      opacity: 0.7;
+      margin-bottom: 36px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Film grain overlay — SVG feTurbulence, static, no animation, no library -->
+  <svg class="grain" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <filter id="grain-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#grain-filter)"/>
+  </svg>
+
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <a href="index.html" class="site-nav__logo">Your Studio</a>
+    <ul class="site-nav__links" role="list">
+      <li><a href="gallery.html">Paintings</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero — Splitting.js char reveal on title -->
+  <section class="hero" aria-label="Welcome">
+    <div class="hero__bg"></div>
+    <div class="hero__content">
+      <p class="hero__label" data-splitting>Original oil paintings</p>
+      <h1 class="hero__title" data-splitting>
+        Your Studio<br>Name Here
+      </h1>
+      <p class="hero__sub">Every work is an original &nbsp;—&nbsp; no prints, no editions</p>
+    </div>
+    <span class="hero__scroll-hint" aria-hidden="true">Scroll</span>
+  </section>
+
+  <!-- Spaces — paintings in context -->
+  <section class="spaces" id="spaces">
+    <div class="spaces__header">
+      <h2 class="spaces__heading">Every space<br>becomes a ritual</h2>
+      <a href="gallery.html" class="btn-secondary">View all paintings</a>
+    </div>
+
+    <div class="spaces__grid">
+      <!-- Replace src values with your own room-mockup images -->
+      <div class="spaces__card">
+        <img src="images/room-mockup-1.jpg" alt="Painting in a bedroom" loading="lazy">
+      </div>
+      <div class="spaces__card">
+        <img src="images/room-mockup-2.jpg" alt="Painting in a living room" loading="lazy">
+      </div>
+      <div class="spaces__card">
+        <img src="images/room-mockup-3.jpg" alt="Painting in a studio" loading="lazy">
+      </div>
+      <div class="spaces__card">
+        <img src="images/room-mockup-4.jpg" alt="Painting in a hallway" loading="lazy">
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <p class="section-label" style="margin-bottom:24px;">About</p>
+    <blockquote class="about__quote">
+      "Replace this with a sentence or two that captures the essence of your work."
+    </blockquote>
+    <p class="about__body">
+      Write about yourself, your process, your materials. Keep it honest
+      and in your own voice. This text should feel like you wrote it, not
+      like a press release.
+    </p>
+    <a href="gallery.html" class="btn-primary">View paintings</a>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p>© 2024 Your Studio. All rights reserved.</p>
+    <p>Contact: <a href="mailto:you@example.com">you@example.com</a></p>
+  </footer>
+
+  <!-- Splitting.js — splits text into chars, injects --char-index CSS vars -->
+  <script src="https://cdn.jsdelivr.net/npm/splitting@1.0.6/dist/splitting.min.js"></script>
+
+  <!-- Lenis — smooth weighted scroll, overrides native scroll -->
+  <!-- Docs: https://github.com/darkroomengineering/lenis -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+
+  <script>
+    // ── Splitting.js init ────────────────────────────────────────────────
+    // Finds all [data-splitting] elements and wraps each char in a <span>
+    // with a CSS variable --char-index. The CSS @keyframes then staggers
+    // the reveal animation using that index.
+    Splitting();
+
+    // ── Lenis smooth scroll ──────────────────────────────────────────────
+    // lerp: interpolation factor — lower = slower/smoother (0.05–0.12 range)
+    const lenis = new Lenis({ lerp: 0.08 });
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // Expose globally so other scripts can pause/resume (e.g. when a modal opens)
+    window.__lenis = lenis;
+  </script>
+
+</body>
+</html>

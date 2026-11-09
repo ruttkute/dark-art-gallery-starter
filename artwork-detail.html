@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painting — Your Studio Name</title>
+  <link rel="stylesheet" href="css/base.css">
+
+  <!-- PhotoSwipe v5 — full-screen lightbox with pinch-zoom -->
+  <!-- Docs: https://photoswipe.com -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.css">
+
+  <!-- Splitting.js for the title char reveal -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/splitting@1.0.6/dist/splitting.css">
+
+  <style>
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 100px 0 0 var(--gutter);
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--fg); }
+
+    .detail-page {
+      padding: 32px var(--gutter) clamp(80px, 10vw, 140px);
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+
+    /* PhotoSwipe gallery trigger — clicking opens fullscreen */
+    .pswp-gallery__item {
+      display: none; /* hidden; triggered programmatically */
+    }
+
+    /* Show first image (the main viewer) */
+    .detail-gallery__main {
+      cursor: zoom-in;
+    }
+
+    /* Shipping notes */
+    .detail-info__shipping {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 16px 0 32px;
+      padding: 16px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .detail-info__shipping strong {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    /* Related artworks */
+    .related-title {
+      font-family: var(--serif);
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: 300;
+      margin-bottom: 28px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Film grain overlay -->
+  <svg class="grain" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <filter id="grain-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#grain-filter)"/>
+  </svg>
+
+  <nav class="site-nav">
+    <a href="index.html" class="site-nav__logo">Your Studio</a>
+    <ul class="site-nav__links" role="list">
+      <li><a href="gallery.html">Paintings</a></li>
+      <li><a href="index.html#about">About</a></li>
+    </ul>
+  </nav>
+
+  <a href="gallery.html" class="back-link" aria-label="Back to gallery">
+    ← All paintings
+  </a>
+
+  <main class="detail-page" id="detail-page">
+    <!-- Rendered by JS from data/artworks.js based on ?slug= URL param -->
+  </main>
+
+  <section class="related-section" id="related-section" style="display:none;"
+           aria-label="Explore more works">
+    <div style="padding: 0 var(--gutter); max-width: var(--max-width); margin: 0 auto;">
+      <p class="related-title">Explore similar visions</p>
+      <div class="painting-grid" id="related-grid"></div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <p>© 2024 Your Studio. All rights reserved.</p>
+  </footer>
+
+  <!-- Shared artwork data -->
+  <script src="data/artworks.js"></script>
+
+  <!-- Splitting.js -->
+  <script src="https://cdn.jsdelivr.net/npm/splitting@1.0.6/dist/splitting.min.js"></script>
+
+  <!-- Lenis smooth scroll -->
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────────────────────
+    const API_BASE = 'https://your-worker.your-name.workers.dev';
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('slug') || '';
+    const artwork = window.ARTWORKS.find(a => a.slug === slug);
+
+    // ── Lenis smooth scroll ───────────────────────────────────────────────────
+    const lenis = new Lenis({ lerp: 0.08 });
+    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+    window.__lenis = lenis;
+
+    // ── Main init ─────────────────────────────────────────────────────────────
+    async function init() {
+      if (!artwork) {
+        document.getElementById('detail-page').innerHTML =
+          '<p style="padding:40px 0;color:var(--muted);">Painting not found.</p>';
+        return;
+      }
+
+      // Update page title
+      document.title = `${artwork.title} — Your Studio Name`;
+
+      // Fetch sold status
+      let isSold = false;
+      try {
+        const soldRes = await fetch(`${API_BASE}/api/sold`);
+        const soldSlugs = await soldRes.json();
+        isSold = soldSlugs.includes(artwork.slug);
+      } catch {}
+
+      renderDetail(isSold);
+      renderRelated();
+
+      // Run Splitting.js on the title AFTER inserting HTML
+      Splitting();
+
+      // Init PhotoSwipe after the gallery markup exists
+      initPhotoSwipe();
+    }
+
+    // ── Render detail page ────────────────────────────────────────────────────
+    function renderDetail(isSold) {
+      const main = document.getElementById('detail-page');
+
+      const thumbsHtml = artwork.images.length > 1
+        ? artwork.images.map((src, i) => `
+            <img src="${src}" alt="${artwork.title} — view ${i + 1}"
+                 class="detail-gallery__thumb ${i === 0 ? 'is-active' : ''}"
+                 data-index="${i}" loading="${i === 0 ? 'eager' : 'lazy'}">
+          `).join('')
+        : '';
+
+      const buyHtml = isSold ? `
+        <div class="sold-notice" role="status" aria-live="polite">
+          <span class="sold-notice__badge">Sold</span>
+          <span class="sold-notice__text">This work has found its home.</span>
+        </div>
+      ` : `
+        <div class="detail-info__shipping">
+          <strong>Ships worldwide.</strong><br>
+          Carefully packaged, insured. Tracking provided.<br>
+          Delivery 5–14 days depending on destination.
+        </div>
+        <button class="btn-primary" id="add-to-cart-btn"
+                aria-label="Add ${artwork.title} to cart">
+          Add to Cart — €${artwork.price}
+        </button>
+      `;
+
+      main.innerHTML = `
+        <div class="detail-layout">
+
+          <!-- Left: Image gallery -->
+          <div class="detail-gallery">
+
+            <!-- PhotoSwipe gallery — clicking the main image opens fullscreen -->
+            <!-- data-pswp-width/height must match your actual image dimensions -->
+            <div id="pswp-gallery" class="pswp-gallery">
+              ${artwork.images.map((src, i) => `
+                <a href="${src}"
+                   data-pswp-width="1600"
+                   data-pswp-height="2000"
+                   class="pswp-gallery__item"
+                   aria-label="Open full-size image ${i + 1}">
+                  <img src="${src}" alt="${artwork.title}" style="display:none">
+                </a>
+              `).join('')}
+            </div>
+
+            <!-- Visible main image — click triggers PhotoSwipe -->
+            <div class="detail-gallery__main" id="main-img-wrap"
+                 role="button" tabindex="0" aria-label="Open full-size view">
+              <img id="main-img" src="${artwork.images[0]}"
+                   alt="${artwork.title}" loading="eager">
+            </div>
+
+            <!-- Thumbnails (shown if multiple images) -->
+            ${thumbsHtml ? `<div class="detail-gallery__thumbs">${thumbsHtml}</div>` : ''}
+          </div>
+
+          <!-- Right: Info -->
+          <div class="detail-info">
+            <p class="detail-info__medium">${artwork.medium} · ${artwork.year}</p>
+            <h1 class="detail-info__title" data-splitting>${artwork.title}</h1>
+            ${!isSold ? `
+              <p class="detail-info__price">€${artwork.price}</p>
+              <p class="detail-info__size">${artwork.size}</p>
+            ` : ''}
+            <p class="detail-info__description">${artwork.description}</p>
+            ${artwork.note ? `<p class="section-label" style="margin-bottom:16px;">${artwork.note}</p>` : ''}
+            ${buyHtml}
+          </div>
+
+        </div>
+      `;
+
+      // Thumbnail switcher
+      main.querySelectorAll('.detail-gallery__thumb').forEach(thumb => {
+        thumb.addEventListener('click', () => {
+          document.querySelectorAll('.detail-gallery__thumb').forEach(t => t.classList.remove('is-active'));
+          thumb.classList.add('is-active');
+          document.getElementById('main-img').src = artwork.images[thumb.dataset.index];
+        });
+      });
+
+      // Add to cart
+      const cartBtn = main.querySelector('#add-to-cart-btn');
+      if (cartBtn) cartBtn.addEventListener('click', addToCart);
+    }
+
+    // ── PhotoSwipe v5 init (ES module) ────────────────────────────────────────
+    // PhotoSwipe v5 requires ES modules. We load it lazily on first open.
+    function initPhotoSwipe() {
+      const mainWrap = document.getElementById('main-img-wrap');
+      if (!mainWrap) return;
+
+      let pswp = null;
+
+      async function openLightbox(startIndex = 0) {
+        if (!pswp) {
+          // Dynamically import PhotoSwipe v5 (ESM) — only loaded on first use
+          const [
+            { default: PhotoSwipeLightbox },
+          ] = await Promise.all([
+            import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe-lightbox.esm.min.js'),
+          ]);
+
+          pswp = new PhotoSwipeLightbox({
+            gallery: '#pswp-gallery',
+            children: 'a',
+            // Lazily load the main PhotoSwipe module
+            pswpModule: () =>
+              import('https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist/photoswipe.esm.min.js'),
+            // Pause Lenis while lightbox is open (avoids scroll conflict)
+            showHideAnimationType: 'fade',
+          });
+
+          // Pause Lenis while PhotoSwipe is open
+          pswp.on('beforeOpen', () => { window.__lenis?.stop(); });
+          pswp.on('destroy', () => { window.__lenis?.start(); });
+
+          pswp.init();
+        }
+
+        pswp.loadAndOpen(startIndex);
+      }
+
+      mainWrap.addEventListener('click', () => openLightbox(0));
+      mainWrap.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') openLightbox(0);
+      });
+    }
+
+    // ── Add to cart ───────────────────────────────────────────────────────────
+    // Builds a ?cart=JSON URL and navigates to checkout.html.
+    // The cart is a JSON array — same format checkout.html reads.
+    function addToCart() {
+      const cartItem = {
+        slug:     artwork.slug,
+        title:    artwork.title,
+        price:    artwork.price,
+        size:     artwork.size,
+        quantity: 1,
+        image:    artwork.images[0],
+        type:     artwork.type,
+      };
+
+      const cartUrl = 'checkout.html?cart=' + encodeURIComponent(JSON.stringify([cartItem]));
+      window.location.href = cartUrl;
+    }
+
+    // ── Related artworks ──────────────────────────────────────────────────────
+    function renderRelated() {
+      const related = window.ARTWORKS.filter(a =>
+        a.slug !== artwork.slug && a.available !== false
+      ).slice(0, 4);
+
+      if (!related.length) return;
+
+      const section = document.getElementById('related-section');
+      const grid = document.getElementById('related-grid');
+      section.style.display = '';
+
+      grid.innerHTML = related.map(a => `
+        <article class="painting-card">
+          <a href="artwork-detail.html?slug=${a.slug}" class="painting-card__image-wrap">
+            <img src="${a.images[0]}" alt="${a.title}" loading="lazy">
+          </a>
+          <div class="painting-card__info">
+            <div>
+              <p class="painting-card__title">${a.title}</p>
+              <p style="font-size:11px;color:var(--muted);margin-top:4px;">${a.size}</p>
+            </div>
+            <p class="painting-card__price">€${a.price}</p>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    // ── Start ─────────────────────────────────────────────────────────────────
+    init();
+  </script>
+
+</body>
+</html>

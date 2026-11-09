@@ -1,0 +1,472 @@
+/* ─── Dark Art Gallery Starter — base.css ───────────────────────────────────
+   Import via: <link rel="stylesheet" href="css/base.css">
+
+   Design tokens at :root — change these to retheme the entire site.
+   Film grain overlay included here (SVG inline in HTML, styled below).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Google Fonts — Cormorant Garamond (display) + Inter (UI) */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap');
+
+/* ── Tokens ───────────────────────────────────────────────────────────────── */
+:root {
+  /* Color */
+  --bg:          #f4f1ec;      /* warm off-white — the "paper" */
+  --fg:          #1c1b18;      /* near-black */
+  --accent:      #5c4a7a;      /* muted violet — replace with your brand color */
+  --muted:       #8a7f74;      /* warm mid-grey for secondary text */
+  --border:      rgba(28, 27, 24, 0.09);
+  --sold-bg:     #1c1b18;
+  --sold-fg:     #f4f1ec;
+
+  /* Typography */
+  --serif: 'Cormorant Garamond', 'IM Fell English', Georgia, serif;
+  --sans:  'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Spacing */
+  --gutter:      clamp(16px, 4vw, 48px);
+  --max-width:   1280px;
+  --card-gap:    clamp(16px, 2.5vw, 32px);
+
+  /* Motion */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: auto; /* Lenis handles smooth scroll — keep this auto */
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button { cursor: pointer; border: none; background: none; font: inherit; }
+
+/* ── Film Grain Overlay ───────────────────────────────────────────────────── */
+/* Applied via <div class="grain" aria-hidden="true"> in each page's <body>   */
+/* Pure SVG feTurbulence — no library, no animation, no performance cost.      */
+/* The SVG is inline in each HTML file; this CSS positions and styles it.      */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  opacity: 0.038;
+  mix-blend-mode: overlay;
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; }
+
+.display-title {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 9vw, 7.5rem);
+  font-weight: 300;
+  letter-spacing: 0.06em;
+  line-height: 0.95;
+  font-style: italic;
+}
+
+.section-label {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Layout Utilities ─────────────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  clip: rect(0,0,0,0);
+  overflow: hidden;
+}
+
+/* ── Navigation ───────────────────────────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px var(--gutter);
+  mix-blend-mode: multiply; /* blends over page content */
+}
+
+.site-nav__logo {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.site-nav__links {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.site-nav__links a {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.site-nav__links a:hover { opacity: 1; }
+
+/* ── Painting Grid ────────────────────────────────────────────────────────── */
+.painting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--card-gap);
+  padding: var(--card-gap) 0;
+}
+
+.painting-card {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.painting-card__image-wrap {
+  position: relative;
+  overflow: hidden;
+  background: var(--border);
+  aspect-ratio: 3/4;
+}
+
+.painting-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease-out);
+}
+
+.painting-card:hover img { transform: scale(1.03); }
+
+/* SOLD badge */
+.sold-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: var(--sold-bg);
+  color: var(--sold-fg);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.painting-card__info {
+  padding: 14px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.painting-card__title {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.painting-card__price {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Like Button ──────────────────────────────────────────────────────────── */
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.like-btn svg { width: 14px; height: 14px; }
+.like-btn.is-liked { color: var(--accent); }
+.like-btn.is-liked svg { fill: var(--accent); stroke: none; }
+
+/* ── Artwork Detail ───────────────────────────────────────────────────────── */
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 6vw, 80px);
+  padding-top: 100px;
+  min-height: 100vh;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .detail-layout { grid-template-columns: 1fr; padding-top: 80px; }
+}
+
+.detail-gallery {
+  position: sticky;
+  top: 100px;
+}
+
+.detail-gallery__main {
+  cursor: zoom-in;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.detail-gallery__main img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.5s var(--ease-out);
+}
+
+.detail-gallery__main:hover img { transform: scale(1.02); }
+
+.detail-gallery__thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.detail-gallery__thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.detail-gallery__thumb.is-active,
+.detail-gallery__thumb:hover { opacity: 1; }
+
+.detail-info {
+  padding-top: 24px;
+}
+
+.detail-info__medium {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.detail-info__title {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+/* Splitting.js character reveal on the detail title */
+.detail-info__title .char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: char-in 0.5s var(--ease-out) forwards;
+  animation-delay: calc(var(--char-index) * 0.025s);
+}
+
+@keyframes char-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.detail-info__price {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+.detail-info__size {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 24px;
+}
+
+.detail-info__description {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--fg);
+  opacity: 0.75;
+  margin-bottom: 32px;
+  max-width: 46ch;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-block;
+  background: var(--fg);
+  color: var(--bg);
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 15px 32px;
+  transition: background 0.2s, color 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+}
+
+.btn-secondary {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 15px 32px;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--fg);
+}
+
+/* ── SOLD Notice ──────────────────────────────────────────────────────────── */
+.sold-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.sold-notice__badge {
+  background: var(--sold-bg);
+  color: var(--sold-fg);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  flex-shrink: 0;
+}
+
+.sold-notice__text {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+/* ── Related Artworks ─────────────────────────────────────────────────────── */
+.related-section {
+  padding: clamp(60px, 8vw, 100px) 0;
+  border-top: 1px solid var(--border);
+  margin-top: clamp(60px, 8vw, 100px);
+}
+
+/* ── Checkout ─────────────────────────────────────────────────────────────── */
+.checkout-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: clamp(32px, 6vw, 80px);
+  padding-top: 100px;
+  min-height: 100vh;
+}
+
+@media (max-width: 860px) {
+  .checkout-layout { grid-template-columns: 1fr; }
+}
+
+.checkout-form input,
+.checkout-form select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font: inherit;
+  color: var(--fg);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.checkout-form input:focus,
+.checkout-form select:focus {
+  border-color: var(--fg);
+}
+
+.checkout-form label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.checkout-form .field { margin-bottom: 20px; }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 40px var(--gutter);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.site-footer p {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+/* ── PhotoSwipe overrides ─────────────────────────────────────────────────── */
+.pswp__bg { background: var(--bg); }
+.pswp--open { --pswp-bg: #f4f1ec; }

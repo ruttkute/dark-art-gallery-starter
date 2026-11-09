@@ -1,0 +1,22 @@
+# Copy to: _worker/wrangler.toml
+# Then fill in your account_id and database_id
+
+name = "your-gallery-worker"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Your Cloudflare account ID (from https://dash.cloudflare.com)
+# account_id = "your_cloudflare_account_id"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "your-gallery-db"
+database_id = "your_d1_database_id"
+
+# Optional: admin secret for DELETE /api/sold/:slug
+# [vars]
+# ADMIN_SECRET = "your-secret-here"
+
+# Local dev:
+#   wrangler dev             → runs Worker on http://localhost:8787
+#   wrangler pages dev .     → serves site + Worker together on http://localhost:8788
