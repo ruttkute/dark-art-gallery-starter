@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: SVG Filter Textures</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap">
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+  DEMO: SVG Filter Effects — paper, ink displacement, watercolor
+  ═══════════════════════════════════════════════════════════════
+  No library. Pure SVG <filter> elements.
+  Reference: https://tympanus.net/codrops/2019/02/19/svg-filter-effects-creating-texture-with-feturbulence/
+
+  Three filter recipes, each applied with one CSS rule:
+    filter: url(#paper-texture)
+    filter: url(#ink-displacement)
+    filter: url(#watercolor-edge)
+
+  What they do:
+    paper-texture  — feTurbulence + feDiffuseLighting → aged paper surface
+    ink-dissolve   — feDisplacementMap on images → painting edges bleed on hover
+    watercolor     — chained turbulence + feComposite → soft organic edges on color
+
+  Use on your art site:
+    - Apply paper-texture to the page background for physicality
+    - Apply ink-dissolve to painting thumbnails on hover
+    - Apply watercolor to colored section backgrounds
+    - Combine with grain overlay for maximum atmosphere
+  ═══════════════════════════════════════════════════════════════
+  -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #e8e3d8;
+      font-family: 'Inter', sans-serif;
+      padding: 60px 40px;
+    }
+
+    .demo-label {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #6a6460;
+      margin-bottom: 48px;
+    }
+
+    h1 {
+      font-family: 'Cormorant', serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 300;
+      font-style: italic;
+      margin-bottom: 64px;
+      line-height: 1;
+    }
+
+    .section {
+      max-width: 1000px;
+      margin: 0 auto 80px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant', serif;
+      font-size: 1.3rem;
+      font-style: italic;
+      font-weight: 300;
+      color: #c9a96e;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: #6a6460;
+      letter-spacing: 0.08em;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    code {
+      background: #1e1e1e;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #c9a96e;
+    }
+
+    /* ── Recipe 1: Paper texture ──────────────────────────── */
+    /* Apply to any element to get aged paper surface */
+    .paper-demo {
+      width: 100%;
+      height: 200px;
+      background: #f0ebe2; /* the texture looks best on a light base */
+      filter: url(#paper-texture);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .paper-demo p {
+      font-family: 'Cormorant', serif;
+      font-size: 2rem;
+      font-style: italic;
+      font-weight: 300;
+      color: #2a1f14;
+    }
+
+    /* ── Recipe 2: Ink dissolve on images ─────────────────── */
+    .ink-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .ink-card {
+      position: relative;
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .ink-card__inner {
+      width: 100%;
+      height: 100%;
+      transition: filter 0.6s ease;
+    }
+
+    /* Base painting placeholder */
+    .ink-card:nth-child(1) .ink-card__inner { background: linear-gradient(145deg, #1e1a16, #2a2318); }
+    .ink-card:nth-child(2) .ink-card__inner { background: linear-gradient(145deg, #161a1e, #1e2428); }
+    .ink-card:nth-child(3) .ink-card__inner { background: linear-gradient(145deg, #1a161e, #24182a); }
+
+    /* On hover: apply the displacement filter — edges bleed and dissolve */
+    .ink-card:hover .ink-card__inner {
+      filter: url(#ink-dissolve);
+    }
+
+    .ink-card__label {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      font-family: 'Cormorant', serif;
+      font-size: 1rem;
+      font-style: italic;
+      color: #c9a96e;
+      pointer-events: none;
+    }
+
+    /* ── Recipe 3: Watercolor edges ───────────────────────── */
+    .wc-blocks {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .wc-block {
+      flex: 1;
+      min-width: 160px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 1.1rem;
+    }
+
+    /* Watercolor filter makes the edges organic and bleeding */
+    .wc-block:nth-child(1) { background: #3a2a1a; filter: url(#watercolor-edge); color: #e8c88a; }
+    .wc-block:nth-child(2) { background: #1a2a3a; filter: url(#watercolor-edge); color: #8ab4e8; }
+    .wc-block:nth-child(3) { background: #2a1a2a; filter: url(#watercolor-edge); color: #d8a8e8; }
+    .wc-block:nth-child(4) { background: #1a2a1a; filter: url(#watercolor-edge); color: #a8d8a8; }
+
+    /* ── Page background with paper texture ────────────────── */
+    /* Uncomment to apply paper texture to the full page background:
+       body { filter: url(#paper-texture); }
+       Note: this affects all child elements too — apply to a background div instead */
+
+    .note {
+      font-size: 12px;
+      color: #6a6460;
+      line-height: 1.7;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <!--
+  ══════════════════════════════════════════════════
+  SVG FILTER DEFINITIONS — place once per page,
+  hidden, referenced by filter: url(#id) in CSS
+  ══════════════════════════════════════════════════
+  -->
+  <svg width="0" height="0" style="position:absolute;" aria-hidden="true">
+    <defs>
+
+      <!--
+      RECIPE 1: Paper texture
+      feTurbulence generates fractal noise
+      feDiffuseLighting interprets that noise as a surface with light hitting it
+      Result: aged, slightly roughened paper surface
+      Adjust: baseFrequency for grain size, lighting-color for paper warmth
+      -->
+      <filter id="paper-texture" x="0%" y="0%" width="100%" height="100%"
+              color-interpolation-filters="linearRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="4"
+                      stitchTiles="stitch" result="noise"/>
+        <feDiffuseLighting in="noise" lighting-color="#f8f2e4" surfaceScale="2" result="light">
+          <feDistantLight azimuth="45" elevation="60"/>
+        </feDiffuseLighting>
+        <feComposite in="SourceGraphic" in2="light" operator="multiply"/>
+      </filter>
+
+      <!--
+      RECIPE 2: Ink dissolve / edge bleed
+      feDisplacementMap uses a turbulence map to push pixels off-center
+      Applied to images, it makes the edges dissolve like ink in water
+      Adjust: scale for displacement strength (20–60 is useful range)
+              baseFrequency for how fine or coarse the bleed is
+      -->
+      <filter id="ink-dissolve" x="-15%" y="-15%" width="130%" height="130%"
+              color-interpolation-filters="linearRGB">
+        <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="4"
+                      seed="2" result="turbulence"/>
+        <feDisplacementMap in="SourceGraphic" in2="turbulence"
+                           scale="40" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+
+      <!--
+      RECIPE 3: Watercolor edge bleed
+      Aggressive turbulence displacement creates soft, organic edges on color blocks
+      The blur+composite stack clips the result back to alpha shape
+      Adjust: stdDeviation for edge softness, scale for how much edges bleed
+      -->
+      <filter id="watercolor-edge" x="-20%" y="-20%" width="140%" height="140%"
+              color-interpolation-filters="linearRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.008"
+                      numOctaves="6" seed="5" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise"
+                           scale="22" xChannelSelector="R" yChannelSelector="B"
+                           result="displaced"/>
+        <feGaussianBlur in="displaced" stdDeviation="1.5" result="blurred"/>
+        <feComposite in="blurred" in2="SourceGraphic" operator="atop"/>
+      </filter>
+
+      <!--
+      BONUS: Worn photograph
+      Combines grain + slight blur + color fade for an aged photo feel
+      Good for testimonial photos or artist portrait images
+      -->
+      <filter id="worn-photo" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3"
+                      stitchTiles="stitch" result="noise"/>
+        <feColorMatrix type="saturate" values="0.3" in="noise" result="desatNoise"/>
+        <feBlend in="SourceGraphic" in2="desatNoise" mode="multiply" result="grained"/>
+        <feGaussianBlur in="grained" stdDeviation="0.4"/>
+      </filter>
+
+    </defs>
+  </svg>
+
+  <p class="demo-label">Texture Demo 02 — SVG Filters</p>
+  <h1>Filter<br>recipes</h1>
+
+  <!-- Recipe 1: Paper texture -->
+  <div class="section">
+    <p class="section-title">01 — Paper texture</p>
+    <p class="section-desc">
+      <code>filter: url(#paper-texture)</code> on any element.
+      Uses feTurbulence + feDiffuseLighting to simulate aged paper surface.
+      Best applied to light-colored backgrounds.
+    </p>
+    <div class="paper-demo">
+      <p>Works on paper, 2024</p>
+    </div>
+  </div>
+
+  <!-- Recipe 2: Ink dissolve -->
+  <div class="section">
+    <p class="section-title">02 — Ink dissolve (hover)</p>
+    <p class="section-desc">
+      <code>filter: url(#ink-dissolve)</code> on hover — painting edges bleed and dissolve.
+      Uses feDisplacementMap to push pixels based on a turbulence map.
+      Hover each card to see the effect.
+    </p>
+    <div class="ink-grid">
+      <div class="ink-card">
+        <div class="ink-card__inner"></div>
+        <span class="ink-card__label">Dark Study I</span>
+      </div>
+      <div class="ink-card">
+        <div class="ink-card__inner"></div>
+        <span class="ink-card__label">Nocturne</span>
+      </div>
+      <div class="ink-card">
+        <div class="ink-card__inner"></div>
+        <span class="ink-card__label">Threshold</span>
+      </div>
+    </div>
+    <p class="note">
+      The displacement scale (40) controls bleed strength.
+      Lower = subtle edge softening. Higher (60–80) = dramatic dissolution.
+      Animate the scale via CSS custom properties or JS for a timed effect.
+    </p>
+  </div>
+
+  <!-- Recipe 3: Watercolor edges -->
+  <div class="section">
+    <p class="section-title">03 — Watercolor edge bleed</p>
+    <p class="section-desc">
+      <code>filter: url(#watercolor-edge)</code> on color blocks.
+      Displaces + blurs edges to look like watercolor spreading on wet paper.
+    </p>
+    <div class="wc-blocks">
+      <div class="wc-block">Warm amber</div>
+      <div class="wc-block">Cold blue</div>
+      <div class="wc-block">Violet shadow</div>
+      <div class="wc-block">Forest green</div>
+    </div>
+    <p class="note">
+      Useful for section backgrounds, color-coded tags, or studio photos.
+      Combine with <code>#grain-filter</code> (from index.html) for maximum physicality.
+    </p>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: Magnetic Hover</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap">
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+  DEMO: Magnetic hover — elements drift toward the cursor
+  ═══════════════════════════════════════════════════════════════
+  No library. Custom ~30-line implementation.
+  Inspired by: https://github.com/Halo-Lab/magnetic-hover
+
+  What it does:
+    Elements within a certain radius are attracted to the cursor.
+    The closer the cursor, the stronger the pull.
+    On mouse-out, elements spring back via CSS transition.
+
+  Parameters per element (data- attributes):
+    data-magnetic-strength  — 0.0–1.0 (default: 0.35)
+                              how far the element moves toward cursor
+    data-magnetic-radius    — px (default: 100)
+                              detection radius around element center
+
+  Use on your art site:
+    - CTA buttons ("View paintings") — feel alive
+    - Navigation links — subtle drift on hover
+    - Painting card titles — drift slightly toward cursor
+    - Social icons, like buttons
+
+  The key is restraint: 0.2–0.4 strength + 80–120px radius
+  reads as organic, not distracting.
+  ═══════════════════════════════════════════════════════════════
+  -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #e8e3d8;
+      font-family: 'Inter', sans-serif;
+      padding: 60px 40px;
+      min-height: 100vh;
+    }
+
+    .demo-label {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #6a6460;
+      margin-bottom: 48px;
+    }
+
+    h1 {
+      font-family: 'Cormorant', serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 300;
+      font-style: italic;
+      margin-bottom: 64px;
+      line-height: 1;
+    }
+
+    .section {
+      max-width: 900px;
+      margin: 0 auto 72px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant', serif;
+      font-size: 1.3rem;
+      font-style: italic;
+      font-weight: 300;
+      color: #c9a96e;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: #6a6460;
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    code {
+      background: #1e1e1e;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #c9a96e;
+    }
+
+    /* All magnetic elements need will-change and transition for spring-back */
+    [data-magnetic] {
+      display: inline-block;
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+
+    /* ── Demo 1: CTA buttons ──────────────────────────────── */
+    .buttons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background: #e8e3d8;
+      color: #111;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 15px 32px;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 15px 32px;
+      border: 1px solid #3a3028;
+      color: #e8e3d8;
+      cursor: pointer;
+    }
+
+    /* ── Demo 2: Nav links ────────────────────────────────── */
+    .nav-demo {
+      display: flex;
+      gap: 48px;
+      flex-wrap: wrap;
+      padding: 20px 0;
+      border-top: 1px solid #1e1e1e;
+      border-bottom: 1px solid #1e1e1e;
+      margin-bottom: 20px;
+    }
+
+    .nav-link {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6a6460;
+      cursor: pointer;
+    }
+
+    /* ── Demo 3: Painting titles ──────────────────────────── */
+    .painting-list {
+      display: grid;
+      gap: 0;
+    }
+
+    .painting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 20px 0;
+      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+    }
+
+    .painting-row__title {
+      font-family: 'Cormorant', serif;
+      font-size: 1.5rem;
+      font-style: italic;
+      font-weight: 300;
+    }
+
+    .painting-row__meta {
+      font-size: 11px;
+      color: #6a6460;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Notes ────────────────────────────────────────────── */
+    .strength-note {
+      font-size: 11px;
+      color: #4a4440;
+      line-height: 1.8;
+      margin-top: 16px;
+    }
+    .strength-note span { color: #c9a96e; }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Typography Demo 03 — Magnetic Hover</p>
+  <h1>Elements<br>that breathe</h1>
+
+  <!-- Demo 1: Buttons -->
+  <div class="section">
+    <p class="section-title">01 — CTA buttons</p>
+    <p class="section-desc">
+      Move cursor near (not over) each button — they drift toward you.
+      The inner element moves; the outer element defines the trigger zone.
+    </p>
+    <div class="buttons">
+      <!-- Wrapper defines the hitbox; inner span is the magnetic element -->
+      <div style="position:relative;display:inline-block;padding:20px;">
+        <span class="btn-primary" data-magnetic data-magnetic-strength="0.4" data-magnetic-radius="80">
+          View paintings
+        </span>
+      </div>
+      <div style="position:relative;display:inline-block;padding:20px;">
+        <span class="btn-secondary" data-magnetic data-magnetic-strength="0.3" data-magnetic-radius="80">
+          About the artist
+        </span>
+      </div>
+    </div>
+    <p class="strength-note">
+      <span>strength 0.4</span> — 40% of cursor distance.<br>
+      <span>strength 0.2</span> — 20%, more subtle (recommended for most elements).
+    </p>
+  </div>
+
+  <!-- Demo 2: Navigation -->
+  <div class="section">
+    <p class="section-title">02 — Navigation links</p>
+    <p class="section-desc">
+      Strength 0.2 + radius 60px — barely perceptible but adds life.
+    </p>
+    <nav class="nav-demo">
+      <span class="nav-link" data-magnetic data-magnetic-strength="0.2" data-magnetic-radius="60">Paintings</span>
+      <span class="nav-link" data-magnetic data-magnetic-strength="0.2" data-magnetic-radius="60">About</span>
+      <span class="nav-link" data-magnetic data-magnetic-strength="0.2" data-magnetic-radius="60">Contact</span>
+      <span class="nav-link" data-magnetic data-magnetic-strength="0.2" data-magnetic-radius="60">Instagram</span>
+    </nav>
+  </div>
+
+  <!-- Demo 3: Painting list -->
+  <div class="section">
+    <p class="section-title">03 — Painting list titles</p>
+    <p class="section-desc">
+      Titles in a list layout — large serif text drifting toward cursor adds tactility.
+    </p>
+    <div class="painting-list">
+      <div class="painting-row">
+        <span class="painting-row__title" data-magnetic data-magnetic-strength="0.25" data-magnetic-radius="120">Dark Study I</span>
+        <span class="painting-row__meta">Oil · 21×30 · €650</span>
+      </div>
+      <div class="painting-row">
+        <span class="painting-row__title" data-magnetic data-magnetic-strength="0.25" data-magnetic-radius="120">Nocturne</span>
+        <span class="painting-row__meta">Oil · 30×40 · €980</span>
+      </div>
+      <div class="painting-row">
+        <span class="painting-row__title" data-magnetic data-magnetic-strength="0.25" data-magnetic-radius="120">Threshold</span>
+        <span class="painting-row__meta">Oil · 40×50 · €1 400</span>
+      </div>
+      <div class="painting-row">
+        <span class="painting-row__title" data-magnetic data-magnetic-strength="0.25" data-magnetic-radius="120">The Wound That Makes The Saint</span>
+        <span class="painting-row__meta">Oil · 50×70 · €2 100</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Magnetic hover — no library ───────────────────────────────────────
+    //
+    // For each [data-magnetic] element:
+    //   1. Track cursor position globally
+    //   2. Each frame: measure distance from cursor to element center
+    //   3. If distance < radius: translate element toward cursor by (dist * strength)
+    //   4. If distance >= radius: translate back to 0,0 (CSS transition handles spring)
+    //
+    // The transition on [data-magnetic] in CSS handles the spring-back animation.
+
+    const magneticEls = document.querySelectorAll('[data-magnetic]');
+    let mouseX = 0;
+    let mouseY = 0;
+
+    document.addEventListener('mousemove', e => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    function tick() {
+      magneticEls.forEach(el => {
+        const strength = parseFloat(el.dataset.magneticStrength ?? 0.35);
+        const radius   = parseFloat(el.dataset.magneticRadius   ?? 100);
+
+        const rect = el.getBoundingClientRect();
+        const cx   = rect.left + rect.width  / 2;
+        const cy   = rect.top  + rect.height / 2;
+
+        const dx   = mouseX - cx;
+        const dy   = mouseY - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < radius) {
+          // Within radius — pull toward cursor
+          // Proximity: 1 at center, 0 at radius edge
+          const proximity = 1 - dist / radius;
+          const moveX = dx * strength * proximity;
+          const moveY = dy * strength * proximity;
+          el.style.transform = `translate(${moveX}px, ${moveY}px)`;
+        } else {
+          // Outside radius — spring back via CSS transition
+          el.style.transform = 'translate(0, 0)';
+        }
+      });
+
+      requestAnimationFrame(tick);
+    }
+
+    tick();
+  </script>
+
+</body>
+</html>

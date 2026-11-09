@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: Text Scramble Reveals</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap">
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+  DEMO: Scramble text — chars cycle through symbols before resolving
+  ═══════════════════════════════════════════════════════════════
+  No external library — custom implementation (~40 lines)
+  Inspired by: https://github.com/yomotsu/ScrambleText
+
+  What it does:
+    Each character is replaced with a random symbol from a charset,
+    cycling rapidly before "resolving" to its real value.
+    Characters resolve left-to-right with a stagger.
+
+  Charset options (pick based on feel):
+    esoteric:   ✦ ✧ ⬡ ◈ ☽ ⌘ ⍟ ◉ ⊕ ↯ ⌁
+    latin-rune: Ä Ø Þ ψ ξ Σ Λ Φ Ω χ
+    morse:      – · — ·– –· ·· ––
+    pure noise: !@#$%^&*()[]{}<>?/|
+
+  Use on your art site:
+    - Page load: painting title scrambles then resolves
+    - Hover: nav labels scramble for 400ms then snap back
+    - Scroll-enter: section headings scramble into view
+    - After route change (Barba.js): titles re-scramble on new page
+  ═══════════════════════════════════════════════════════════════
+  -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #e8e3d8;
+      font-family: 'Inter', sans-serif;
+      padding: 60px 40px;
+      min-height: 100vh;
+    }
+
+    .demo-label {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #6a6460;
+      margin-bottom: 48px;
+    }
+
+    h1 {
+      font-family: 'Cormorant', serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 300;
+      font-style: italic;
+      margin-bottom: 64px;
+      line-height: 1;
+    }
+
+    .section {
+      max-width: 900px;
+      margin: 0 auto 72px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant', serif;
+      font-size: 1.3rem;
+      font-style: italic;
+      font-weight: 300;
+      color: #c9a96e;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: #6a6460;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    code {
+      background: #1e1e1e;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #c9a96e;
+    }
+
+    /* ── Demo 1: Page-load hero scramble ──────────────────── */
+    .hero-scramble {
+      font-family: 'Cormorant', serif;
+      font-size: clamp(3.5rem, 10vw, 9rem);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 0.95;
+      letter-spacing: 0.03em;
+      /* Scramble chars show in accent color before resolving */
+      color: #e8e3d8;
+    }
+
+    /* Scrambling chars briefly flash amber */
+    .scramble-char.is-scrambling {
+      color: #c9a96e;
+    }
+
+    /* ── Demo 2: Painting titles on hover ─────────────────── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      cursor: pointer;
+    }
+
+    .card__painting {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(145deg, #1e1a16, #2a2318);
+      margin-bottom: 10px;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover .card__painting { opacity: 0.85; }
+    .card:nth-child(2) .card__painting { background: linear-gradient(145deg, #161a1e, #1e2428); }
+    .card:nth-child(3) .card__painting { background: linear-gradient(145deg, #1a161e, #24182a); }
+    .card:nth-child(4) .card__painting { background: linear-gradient(145deg, #1a1e16, #202a18); }
+
+    .card__title {
+      font-family: 'Cormorant', serif;
+      font-size: 1rem;
+      font-style: italic;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Demo 3: Nav hover ────────────────────────────────── */
+    .nav-demo {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6a6460;
+      cursor: pointer;
+      transition: color 0.2s;
+      user-select: none;
+    }
+
+    .nav-link:hover { color: #e8e3d8; }
+
+    /* ── Replay button ────────────────────────────────────── */
+    .replay-btn {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #c9a96e;
+      cursor: pointer;
+      background: none;
+      border: 1px solid #3a3028;
+      padding: 8px 20px;
+      margin-top: 20px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .replay-btn:hover { border-color: #c9a96e; }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Typography Demo 02 — Scramble Reveals</p>
+  <h1>Symbols<br>resolving</h1>
+
+  <!-- Demo 1: Hero scramble on load -->
+  <div class="section">
+    <p class="section-title">01 — Page load hero title</p>
+    <p class="section-desc">
+      Chars cycle through esoteric symbols (<code>✦ ⬡ ◈ ☽ ⌘ ⍟</code>) before resolving left-to-right.
+    </p>
+    <div class="hero-scramble" id="hero-scramble">
+      Paintings
+    </div>
+    <button class="replay-btn" onclick="startHeroScramble()">Replay →</button>
+  </div>
+
+  <!-- Demo 2: Painting card titles scramble on hover -->
+  <div class="section">
+    <p class="section-title">02 — Painting title hover scramble</p>
+    <p class="section-desc">
+      Hover a card — the title scrambles for ~400ms then snaps to its real name.
+    </p>
+    <div class="cards">
+      <div class="card">
+        <div class="card__painting"></div>
+        <div class="card__title" data-scramble-hover data-text="DARK STUDY I">DARK STUDY I</div>
+      </div>
+      <div class="card">
+        <div class="card__painting"></div>
+        <div class="card__title" data-scramble-hover data-text="NOCTURNE II">NOCTURNE II</div>
+      </div>
+      <div class="card">
+        <div class="card__painting"></div>
+        <div class="card__title" data-scramble-hover data-text="THRESHOLD">THRESHOLD</div>
+      </div>
+      <div class="card">
+        <div class="card__painting"></div>
+        <div class="card__title" data-scramble-hover data-text="RITUAL">RITUAL</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo 3: Nav links scramble on hover -->
+  <div class="section">
+    <p class="section-title">03 — Navigation labels</p>
+    <p class="section-desc">
+      Hover a nav label — it briefly scrambles then resolves. Subtle; uses a narrow latin charset.
+    </p>
+    <nav class="nav-demo">
+      <span class="nav-link" data-scramble-hover data-text="Paintings">Paintings</span>
+      <span class="nav-link" data-scramble-hover data-text="About">About</span>
+      <span class="nav-link" data-scramble-hover data-text="Contact">Contact</span>
+    </nav>
+  </div>
+
+  <script>
+    // ── Scramble engine — no external library ─────────────────────────────
+    //
+    // Usage:
+    //   scramble(element, options)
+    //   options.target   — string to resolve to (default: element's textContent)
+    //   options.chars    — array of chars to scramble through
+    //   options.duration — total ms for the full scramble (default: 800)
+    //   options.stagger  — delay between chars resolving (default: 40ms)
+    //   options.onDone   — callback when complete
+
+    const CHARSETS = {
+      // For painting titles — esoteric and atmospheric
+      esoteric: ['✦','✧','⬡','◈','☽','⌘','⍟','◉','⊕','↯','⌁','⟡','✵','❖'],
+      // For nav labels — quieter, latin-based
+      latin: ['Ä','Ø','Þ','ψ','ξ','Σ','Λ','Φ','Ω','χ','Ξ','Ψ'],
+      // For headings — mixed symbols
+      mixed: ['✦','*','—','|','/','+','×','◦','○','●'],
+    };
+
+    function scramble(el, options = {}) {
+      const target   = options.target   || el.textContent;
+      const chars    = options.chars    || CHARSETS.esoteric;
+      const duration = options.duration || 800;
+      const stagger  = options.stagger  || 40;
+
+      // Split target into chars, preserving spaces
+      const letters = target.split('');
+      const spans   = letters.map(letter => {
+        const span = document.createElement('span');
+        span.className = 'scramble-char';
+        span.textContent = letter;
+        return span;
+      });
+
+      // Replace element content with spans
+      el.innerHTML = '';
+      spans.forEach(s => el.appendChild(s));
+
+      // For each character, animate scramble then resolve
+      spans.forEach((span, i) => {
+        const letter = letters[i];
+        if (letter === ' ') return; // skip spaces
+
+        const resolveAt  = i * stagger;           // when this char resolves
+        const scrambleEnd = resolveAt + duration * 0.6; // scramble until 60% through
+
+        const startTime = performance.now();
+
+        function tick(now) {
+          const elapsed = now - startTime;
+
+          if (elapsed < resolveAt) {
+            // Not yet — show a random scramble char
+            span.textContent = chars[Math.floor(Math.random() * chars.length)];
+            span.classList.add('is-scrambling');
+            requestAnimationFrame(tick);
+          } else if (elapsed < scrambleEnd) {
+            // Actively scrambling
+            span.textContent = chars[Math.floor(Math.random() * chars.length)];
+            span.classList.add('is-scrambling');
+            requestAnimationFrame(tick);
+          } else {
+            // Resolved
+            span.textContent = letter;
+            span.classList.remove('is-scrambling');
+          }
+        }
+
+        requestAnimationFrame(tick);
+      });
+    }
+
+    // ── Demo 1: Hero scramble on load ─────────────────────────────────────
+    function startHeroScramble() {
+      const el = document.getElementById('hero-scramble');
+      scramble(el, {
+        target: 'Paintings',
+        chars: CHARSETS.esoteric,
+        duration: 1200,
+        stagger: 60,
+      });
+    }
+
+    // Auto-start on load
+    window.addEventListener('load', () => {
+      setTimeout(startHeroScramble, 300);
+    });
+
+    // ── Demo 2 & 3: Hover scramble ────────────────────────────────────────
+    document.querySelectorAll('[data-scramble-hover]').forEach(el => {
+      const originalText = el.dataset.text || el.textContent.trim();
+      let isScrambling = false;
+
+      el.addEventListener('mouseenter', () => {
+        if (isScrambling) return;
+        isScrambling = true;
+
+        const isNav = el.classList.contains('nav-link');
+        scramble(el, {
+          target: originalText,
+          chars: isNav ? CHARSETS.latin : CHARSETS.mixed,
+          duration: isNav ? 500 : 700,
+          stagger: isNav ? 30 : 50,
+          onDone: () => { isScrambling = false; },
+        });
+
+        // Reset isScrambling after full duration
+        const totalTime = originalText.replace(/ /g,'').length * (isNav ? 30 : 50) + (isNav ? 500 : 700);
+        setTimeout(() => { isScrambling = false; }, totalTime);
+      });
+    });
+  </script>
+
+</body>
+</html>

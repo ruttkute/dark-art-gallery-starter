@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: Rough.js Hand-Drawn Frames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap">
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+  DEMO: Rough.js — hand-drawn SVG borders on painting cards
+  ═══════════════════════════════════════════════════════════════
+  Library: https://github.com/rough-stuff/rough
+  CDN:     https://unpkg.com/roughjs@4.6.6/bundled/rough.js
+
+  What it does:
+    Rough.js draws any SVG shape (rect, line, ellipse, path)
+    with controlled randomness — each render is slightly different,
+    like a chalk or charcoal mark. No two borders look identical.
+
+  Use on your art site:
+    - Painting card borders that feel handmade
+    - Section dividers that look like chalk lines
+    - Decorative frames around featured work
+    - Underlines on section headings
+
+  Technique: position an <svg> absolutely over each card,
+  draw a rough rectangle matching the card's dimensions,
+  regenerate on hover for a living-sketch effect.
+  ═══════════════════════════════════════════════════════════════
+  -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #e8e3d8;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 60px 40px;
+    }
+
+    .demo-label {
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #6a6460;
+      margin-bottom: 48px;
+    }
+
+    h1 {
+      font-family: 'Cormorant', serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: 0.04em;
+      margin-bottom: 64px;
+      line-height: 1;
+    }
+
+    /* ── Painting cards ───────────────────────────────────── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 48px;
+      max-width: 1000px;
+      margin: 0 auto 80px;
+    }
+
+    .card {
+      position: relative; /* SVG overlay is positioned here */
+      cursor: pointer;
+    }
+
+    /* The painting placeholder */
+    .card__painting {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(145deg, #1e1a16 0%, #2a2318 60%, #1a1612 100%);
+      display: flex;
+      align-items: flex-end;
+      padding: 20px;
+    }
+
+    .card__title {
+      font-family: 'Cormorant', serif;
+      font-size: 1.1rem;
+      font-style: italic;
+      font-weight: 300;
+      color: #c9a96e;
+      line-height: 1.2;
+    }
+
+    /* SVG overlay — drawn by Rough.js, sits on top of the card */
+    .card__rough-svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none; /* so the card is still clickable */
+      overflow: visible;
+    }
+
+    /* ── Section dividers ─────────────────────────────────── */
+    .divider-section {
+      max-width: 1000px;
+      margin: 0 auto 80px;
+    }
+
+    .divider-label {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6a6460;
+      margin-bottom: 24px;
+    }
+
+    .divider-wrap {
+      position: relative;
+      height: 40px;
+      margin: 32px 0;
+    }
+
+    .divider-wrap svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* ── Underlines ───────────────────────────────────────── */
+    .heading-wrap {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 24px;
+    }
+
+    .heading-wrap h2 {
+      font-family: 'Cormorant', serif;
+      font-size: 2rem;
+      font-weight: 300;
+      font-style: italic;
+      position: relative;
+      z-index: 1;
+    }
+
+    .heading-wrap svg {
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 20px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    /* ── Notes ────────────────────────────────────────────── */
+    .note {
+      max-width: 600px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #6a6460;
+      margin-top: 24px;
+    }
+    .note code {
+      background: #1e1e1e;
+      padding: 2px 6px;
+      font-size: 12px;
+      color: #c9a96e;
+    }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Texture Demo 01 — Rough.js</p>
+  <h1>Hand-drawn<br>frames</h1>
+
+  <!-- Painting cards with rough borders -->
+  <div class="cards" id="cards">
+    <div class="card" data-title="Dark Study I">
+      <div class="card__painting">
+        <p class="card__title">Dark Study I</p>
+      </div>
+      <svg class="card__rough-svg" id="rough-0"></svg>
+    </div>
+    <div class="card" data-title="Nocturne II">
+      <div class="card__painting" style="background:linear-gradient(145deg,#1a1e1c,#232820,#171a16)">
+        <p class="card__title">Nocturne II</p>
+      </div>
+      <svg class="card__rough-svg" id="rough-1"></svg>
+    </div>
+    <div class="card" data-title="Threshold">
+      <div class="card__painting" style="background:linear-gradient(145deg,#1e1618,#2a1e20,#1a1416)">
+        <p class="card__title">Threshold</p>
+      </div>
+      <svg class="card__rough-svg" id="rough-2"></svg>
+    </div>
+  </div>
+
+  <!-- Section dividers -->
+  <div class="divider-section">
+    <p class="divider-label">Section dividers</p>
+
+    <div class="heading-wrap">
+      <h2>Works on paper</h2>
+      <svg id="underline-svg"></svg>
+    </div>
+
+    <p class="note">
+      Each divider is drawn fresh on page load — hover a card to redraw its border.
+      Adjust <code>roughness</code> (0–10) for more or less sketch feel.
+      <code>bowing</code> controls how much lines curve.
+    </p>
+
+    <div class="divider-wrap">
+      <svg id="divider-1"></svg>
+    </div>
+    <div class="divider-wrap">
+      <svg id="divider-2"></svg>
+    </div>
+  </div>
+
+  <!-- Rough.js — hand-drawn SVG rendering -->
+  <script src="https://unpkg.com/roughjs@4.6.6/bundled/rough.js"></script>
+
+  <script>
+    // ── Draw rough borders on painting cards ──────────────────────────────
+    // roughness: 0 = clean, 10 = very sketchy. 1.5–2.5 is the "charcoal" range.
+    // bowing: 0 = straight lines, 2 = curved like a loose sketch.
+    // stroke: line color — slightly warm white to look like chalk on dark paper.
+
+    const ROUGH_OPTIONS = {
+      roughness: 2,
+      bowing: 1.2,
+      stroke: '#c9a96e',
+      strokeWidth: 1.5,
+      fill: 'none',
+    };
+
+    function drawCardBorder(card, svgEl) {
+      const { width, height } = card.querySelector('.card__painting').getBoundingClientRect();
+      svgEl.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+      // Clear previous drawing (for hover redraw)
+      svgEl.innerHTML = '';
+
+      const rc = rough.svg(svgEl);
+
+      // Outer border — inset slightly so it sits outside the painting edge
+      const inset = 8;
+      svgEl.appendChild(rc.rectangle(
+        -inset, -inset,
+        width + inset * 2,
+        height + inset * 2,
+        { ...ROUGH_OPTIONS, roughness: 1.8 }
+      ));
+
+      // Optional: second inner stroke for a double-frame effect
+      svgEl.appendChild(rc.rectangle(
+        inset, inset,
+        width - inset * 2,
+        height - inset * 2,
+        { ...ROUGH_OPTIONS, roughness: 1.2, strokeWidth: 0.7, stroke: '#5a4a30' }
+      ));
+    }
+
+    // Draw all card borders on load
+    function initCards() {
+      document.querySelectorAll('.card').forEach((card, i) => {
+        const svgEl = document.getElementById(`rough-${i}`);
+        if (!svgEl) return;
+
+        // Initial draw
+        drawCardBorder(card, svgEl);
+
+        // Redraw on hover — each hover produces a slightly different sketch
+        card.addEventListener('mouseenter', () => {
+          drawCardBorder(card, svgEl);
+        });
+      });
+    }
+
+    // ── Draw section dividers ─────────────────────────────────────────────
+    // A rough horizontal line across the full container width.
+    // Multiple close lines layered = thicker, more expressive stroke.
+
+    function drawDivider(svgId, lineY = 20, width = null) {
+      const svgEl = document.getElementById(svgId);
+      const w = width || svgEl.parentElement.offsetWidth;
+
+      svgEl.setAttribute('viewBox', `0 0 ${w} 40`);
+      svgEl.innerHTML = '';
+
+      const rc = rough.svg(svgEl);
+
+      // Three overlapping lines for a chalky multi-stroke look
+      svgEl.appendChild(rc.line(0, lineY, w, lineY, {
+        roughness: 2.5, bowing: 0.5,
+        stroke: '#3a3028', strokeWidth: 2,
+      }));
+      svgEl.appendChild(rc.line(0, lineY + 2, w, lineY + 2, {
+        roughness: 3, bowing: 0.3,
+        stroke: '#2e2820', strokeWidth: 1,
+      }));
+    }
+
+    // ── Draw underline on heading ─────────────────────────────────────────
+    function drawUnderline(svgId) {
+      const svgEl = document.getElementById(svgId);
+      const w = svgEl.parentElement.querySelector('h2').offsetWidth;
+
+      svgEl.setAttribute('viewBox', `0 0 ${w} 20`);
+      svgEl.innerHTML = '';
+
+      const rc = rough.svg(svgEl);
+
+      svgEl.appendChild(rc.line(0, 10, w, 10, {
+        roughness: 2, bowing: 1,
+        stroke: '#c9a96e', strokeWidth: 1.2,
+      }));
+    }
+
+    // ── Init everything after layout settles ─────────────────────────────
+    window.addEventListener('load', () => {
+      initCards();
+      drawDivider('divider-1');
+      drawDivider('divider-2');
+      drawUnderline('underline-svg');
+    });
+
+    window.addEventListener('resize', () => {
+      initCards();
+      drawDivider('divider-1');
+      drawDivider('divider-2');
+      drawUnderline('underline-svg');
+    });
+  </script>
+
+</body>
+</html>

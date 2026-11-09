@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo: Variable Font Scroll Animation</title>
+  <!-- Fraunces: variable font with wght (100–900) + opsz (9–144) + WONK axis -->
+  <!-- opsz = optical size: smaller values = more elaborate/decorative letterforms -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/splitting@1.0.6/dist/splitting.css">
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+  DEMO: Variable Font driven by scroll + cursor proximity
+  ═══════════════════════════════════════════════════════════════
+  Font: Fraunces (Google Fonts) — opsz + wght variable axes
+  Split: Splitting.js — injects --char-index CSS vars
+  Motion: Lenis smooth scroll + scroll listener
+
+  What it does:
+    Each character of the title has its font-weight and optical-size
+    driven by scroll position and its own char-index.
+    Result: the title seems to "solidify" as you scroll into it —
+    thin ghostly letters acquire weight and presence.
+
+  Axes used:
+    wght (font-weight): 100 = hairline → 900 = heavy
+    opsz (optical size): 9 = small/decorative → 144 = large/plain
+    WONK (wonky): 0 = normal → 1 = off-axis letterforms (subtle)
+
+  Use on your art site:
+    - Hero title that materializes as you scroll down
+    - Section headings that "wake up" on scroll-enter
+    - Painting titles on the detail page
+  ═══════════════════════════════════════════════════════════════
+  -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #111;
+      color: #e8e3d8;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .demo-label {
+      position: fixed;
+      top: 24px;
+      left: 40px;
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #6a6460;
+      z-index: 10;
+    }
+
+    .scroll-hint {
+      position: fixed;
+      bottom: 24px;
+      right: 40px;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #3a3430;
+      writing-mode: vertical-rl;
+      z-index: 10;
+    }
+
+    /* ── Hero section — 100vh ───────────────────────────────── */
+    .hero {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 60px 40px;
+      position: relative;
+    }
+
+    /* The variable font title */
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(4rem, 11vw, 10rem);
+      line-height: 0.9;
+      letter-spacing: -0.02em;
+
+      /* Start: thin + decorative optical size */
+      font-weight: 100;
+      font-variation-settings: 'wght' 100, 'opsz' 9, 'WONK' 0;
+    }
+
+    /* Each char gets individual control via --char-index (from Splitting.js) */
+    .hero-title .char {
+      display: inline-block;
+      /* JS will animate font-variation-settings per character */
+      transition: font-variation-settings 0.3s ease;
+    }
+
+    /* ── Scroll-triggered sections ──────────────────────────── */
+    .section {
+      min-height: 60vh;
+      padding: 80px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    /* Section headings — weight driven by Intersection Observer */
+    .section-heading {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(2rem, 5vw, 4.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      font-variation-settings: 'wght' 100, 'opsz' 12;
+      transition: font-variation-settings 1s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 14ch;
+    }
+
+    .section-heading.is-visible {
+      font-variation-settings: 'wght' 400, 'opsz' 72;
+    }
+
+    /* ── Hover demo ─────────────────────────────────────────── */
+    .hover-section {
+      padding: 80px 40px;
+      border-top: 1px solid #1e1e1e;
+    }
+
+    .hover-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(3rem, 8vw, 7rem);
+      line-height: 0.9;
+      cursor: default;
+    }
+
+    /* Each char responds to cursor X distance in JS */
+    .hover-title .char {
+      display: inline-block;
+      transition: font-variation-settings 0.15s ease;
+      font-variation-settings: 'wght' 100, 'opsz' 9;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: #6a6460;
+      letter-spacing: 0.08em;
+      margin-top: 24px;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <p class="demo-label">Typography Demo 01 — Variable Font</p>
+  <span class="scroll-hint" aria-hidden="true">Scroll</span>
+
+  <!-- Hero — chars gain weight as you scroll down -->
+  <section class="hero">
+    <h1 class="hero-title" data-splitting>
+      Original<br>paintings
+    </h1>
+  </section>
+
+  <!-- Section headings that resolve from thin to medium on scroll-enter -->
+  <section class="section">
+    <h2 class="section-heading" data-splitting-simple>Works on paper</h2>
+    <p class="section-desc">Each character gains weight as you scroll — from hairline to regular.</p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-heading" data-splitting-simple>Dark study series</h2>
+    <p class="section-desc">Section headings use Intersection Observer, not continuous scroll tracking.</p>
+  </section>
+
+  <!-- Cursor proximity demo -->
+  <section class="hover-section">
+    <p style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#6a6460;margin-bottom:20px;">
+      Cursor proximity — move cursor over title
+    </p>
+    <div class="hover-title" id="hover-title" data-splitting>
+      Threshold
+    </div>
+    <p class="section-desc">
+      Characters closest to cursor become heavier.
+      Distance drives wght: near = 700, far = 100.
+    </p>
+  </section>
+
+  <div style="height:30vh;"></div>
+
+  <!-- Splitting.js + Lenis -->
+  <script src="https://cdn.jsdelivr.net/npm/splitting@1.0.6/dist/splitting.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+
+  <script>
+    // ── Run Splitting.js ──────────────────────────────────────────────────
+    Splitting();
+
+    // ── Lenis smooth scroll ───────────────────────────────────────────────
+    const lenis = new Lenis({ lerp: 0.08 });
+    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
+    requestAnimationFrame(raf);
+
+    // ── Hero: scroll drives font-weight per character ─────────────────────
+    // Each char gets weight = base + stagger based on char-index + scroll progress
+    // The result: chars "wake up" one by one from left to right as you scroll
+
+    const heroChars = document.querySelectorAll('.hero-title .char');
+    const totalChars = heroChars.length;
+
+    function updateHeroWeight(scrollY) {
+      const heroHeight = document.querySelector('.hero').offsetHeight;
+      // scroll progress from 0 (top) to 1 (hero scrolled out)
+      const progress = Math.min(scrollY / heroHeight, 1);
+
+      heroChars.forEach((char, i) => {
+        const charProgress = Math.max(0, (progress * 1.4) - (i / totalChars) * 0.4);
+        const weight = 100 + Math.round(charProgress * 500); // 100 → 600
+        const opsz   = 9   + Math.round(charProgress * 60);  // 9 → 69
+        const wonk   = charProgress * 0.3;                   // slight wonk at peak
+
+        char.style.fontVariationSettings =
+          `'wght' ${weight}, 'opsz' ${opsz}, 'WONK' ${wonk}`;
+      });
+    }
+
+    lenis.on('scroll', ({ scroll }) => {
+      updateHeroWeight(scroll);
+    });
+
+    updateHeroWeight(0);
+
+    // ── Section headings: Intersection Observer → CSS transition ─────────
+    // Simpler approach for headings that aren't in the initial viewport:
+    // observe them, add .is-visible class, let CSS transition handle the weight change
+
+    const sectionHeadings = document.querySelectorAll('.section-heading');
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    }, { threshold: 0.4 });
+
+    sectionHeadings.forEach(h => io.observe(h));
+
+    // ── Hover title: cursor X proximity drives per-char weight ────────────
+    // For each character, measure distance to cursor.
+    // Weight maps: near (<80px) = 700, far = 100.
+    // Smooth via requestAnimationFrame + lerp.
+
+    const hoverTitle = document.getElementById('hover-title');
+    const hoverChars = hoverTitle ? hoverTitle.querySelectorAll('.char') : [];
+    let mouseX = -1000;
+    let mouseY = -1000;
+
+    // Track mouse within the hover section
+    hoverTitle?.addEventListener('mousemove', e => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+    hoverTitle?.addEventListener('mouseleave', () => {
+      mouseX = -1000;
+      mouseY = -1000;
+    });
+
+    function updateHoverChars() {
+      hoverChars.forEach(char => {
+        const rect = char.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dist = Math.sqrt((mouseX - cx) ** 2 + (mouseY - cy) ** 2);
+        const proximity = Math.max(0, 1 - dist / 160); // falloff radius: 160px
+        const weight = Math.round(100 + proximity * 600); // 100 → 700
+        const opsz   = Math.round(9   + proximity * 100); // 9 → 109
+        char.style.fontVariationSettings = `'wght' ${weight}, 'opsz' ${opsz}`;
+      });
+      requestAnimationFrame(updateHoverChars);
+    }
+
+    updateHoverChars();
+  </script>
+
+</body>
+</html>
