@@ -20,13 +20,17 @@
 
   What they do:
     paper-texture  — feTurbulence + feDiffuseLighting → aged paper surface
-    ink-dissolve   — feDisplacementMap on images → painting edges bleed on hover
+    ink-dissolve   — feDisplacementMap → UI panel / section edges bleed on hover
     watercolor     — chained turbulence + feComposite → soft organic edges on color
+
+  DESIGN PRINCIPLE: These filters apply to UI chrome — backgrounds, section panels,
+  dividers, navigation bars, frames, decorative shapes. The artwork itself is complete
+  and presents itself without modification.
 
   Use on your art site:
     - Apply paper-texture to the page background for physicality
-    - Apply ink-dissolve to painting thumbnails on hover
-    - Apply watercolor to colored section backgrounds
+    - Apply ink-dissolve to section header panels or nav bars on hover
+    - Apply watercolor to colored section backgrounds or decorative borders
     - Combine with grain overlay for maximum atmosphere
   ═══════════════════════════════════════════════════════════════
   -->
@@ -107,45 +111,81 @@
       color: #2a1f14;
     }
 
-    /* ── Recipe 2: Ink dissolve on images ─────────────────── */
-    .ink-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
+    /* ── Recipe 2: Ink dissolve on UI panels ─────────────────── */
+    /* Applied to section header backgrounds and nav bars — not artwork images */
+    .ink-panels {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .ink-card {
+    .ink-panel {
       position: relative;
-      aspect-ratio: 3/4;
       overflow: hidden;
       cursor: pointer;
-    }
-
-    .ink-card__inner {
-      width: 100%;
-      height: 100%;
       transition: filter 0.6s ease;
     }
 
-    /* Base painting placeholder */
-    .ink-card:nth-child(1) .ink-card__inner { background: linear-gradient(145deg, #1e1a16, #2a2318); }
-    .ink-card:nth-child(2) .ink-card__inner { background: linear-gradient(145deg, #161a1e, #1e2428); }
-    .ink-card:nth-child(3) .ink-card__inner { background: linear-gradient(145deg, #1a161e, #24182a); }
+    /* Section header panel */
+    .ink-panel--section {
+      background: #1e1a14;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-    /* On hover: apply the displacement filter — edges bleed and dissolve */
-    .ink-card:hover .ink-card__inner {
+    /* Navigation bar panel */
+    .ink-panel--nav {
+      background: #161412;
+      padding: 18px 32px;
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      border-top: 1px solid #2a2520;
+    }
+
+    /* Decorative divider panel */
+    .ink-panel--divider {
+      background: linear-gradient(90deg, #1e1a14, #2a2318, #1e1a14);
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+    }
+
+    /* On hover: apply the displacement filter — edges bleed */
+    .ink-panel:hover {
       filter: url(#ink-dissolve);
     }
 
-    .ink-card__label {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
+    .ink-panel__heading {
       font-family: 'Cormorant', serif;
-      font-size: 1rem;
+      font-size: 1.3rem;
       font-style: italic;
+      font-weight: 300;
       color: #c9a96e;
-      pointer-events: none;
+    }
+
+    .ink-panel__label {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #6a6460;
+    }
+
+    .ink-panel__nav-link {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #9a9088;
+    }
+
+    .ink-panel__divider-mark {
+      font-size: 11px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: #3a3028;
     }
 
     /* ── Recipe 3: Watercolor edges ───────────────────────── */
@@ -283,22 +323,25 @@
   <div class="section">
     <p class="section-title">02 — Ink dissolve (hover)</p>
     <p class="section-desc">
-      <code>filter: url(#ink-dissolve)</code> on hover — painting edges bleed and dissolve.
+      <code>filter: url(#ink-dissolve)</code> on hover — UI panel edges bleed and dissolve.
       Uses feDisplacementMap to push pixels based on a turbulence map.
-      Hover each card to see the effect.
+      Applied to UI chrome: section headers, nav bars, decorative dividers — not artwork images.
+      Hover each panel to see the effect.
     </p>
-    <div class="ink-grid">
-      <div class="ink-card">
-        <div class="ink-card__inner"></div>
-        <span class="ink-card__label">Dark Study I</span>
+    <div class="ink-panels">
+      <div class="ink-panel ink-panel--section">
+        <span class="ink-panel__heading">Original works</span>
+        <span class="ink-panel__label">Section header</span>
       </div>
-      <div class="ink-card">
-        <div class="ink-card__inner"></div>
-        <span class="ink-card__label">Nocturne</span>
+      <div class="ink-panel ink-panel--nav">
+        <span class="ink-panel__nav-link">Paintings</span>
+        <span class="ink-panel__nav-link">About</span>
+        <span class="ink-panel__nav-link">Contact</span>
+        <span class="ink-panel__label" style="margin-left:auto;">Navigation bar</span>
       </div>
-      <div class="ink-card">
-        <div class="ink-card__inner"></div>
-        <span class="ink-card__label">Threshold</span>
+      <div class="ink-panel ink-panel--divider">
+        <span class="ink-panel__divider-mark">· · ·</span>
+        <span class="ink-panel__label" style="margin-left:auto;">Section divider</span>
       </div>
     </div>
     <p class="note">

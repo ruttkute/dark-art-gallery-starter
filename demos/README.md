@@ -3,7 +3,9 @@
 Isolated technique demos — each one a single HTML file showing one effect.  
 Open any file in a browser. No server needed. No build step.
 
-Each demo is designed to run on **dark backgrounds with painting-like content** and includes copy-paste ready, commented code.
+**Design principle:** All effects in this collection apply to **UI chrome** — backgrounds, section panels, dividers, navigation bars, frames, decorative shapes. The artwork itself is complete and presents without modification. Filters and distortion on a painting would alter the artist's work; they belong on the site's own surfaces.
+
+Each demo includes copy-paste ready, commented code.
 
 ---
 
@@ -23,7 +25,7 @@ Painting card borders that look like charcoal sketches. Redraw on hover — each
 ### texture-02: SVG filter recipes
 Three production-ready filter recipes applied with one CSS line:
 - `filter: url(#paper-texture)` — aged paper surface on backgrounds
-- `filter: url(#ink-dissolve)` on hover — painting edges bleed and dissolve
+- `filter: url(#ink-dissolve)` on hover — section panel / nav bar edges bleed and dissolve
 - `filter: url(#watercolor-edge)` — soft organic edges on color blocks
 
 No JavaScript. No library. Pure SVG `<filter>` defined once in the page.
@@ -71,7 +73,7 @@ These work well together on the same page:
 
 - **grain overlay** (from main site) + **paper texture filter** = maximum physicality
 - **scramble reveal** (page load) + **variable font weight** (scroll) = title that materializes
-- **Rough.js borders** + **ink dissolve** (hover) = paintings feel drawn and dissolving
+- **Rough.js borders** + **ink dissolve** (hover) = section frames feel drawn and dissolving on hover
 - **magnetic hover** + **Splitting.js char reveal** = text that arrives then becomes alive
 
 ---

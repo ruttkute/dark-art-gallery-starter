@@ -25,28 +25,10 @@
       margin: 0 auto;
     }
 
-    /* WebGL canvas — curtains.js positions its planes over the page via this */
-    #curtains-canvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* When WebGL is active, painting images become invisible
-       (curtains.js WebGL plane sits on top) */
-    body.webgl-active .painting-card img {
-      opacity: 0;
-    }
-
-    /* Fallback label — hidden normally, shown if WebGL not available */
-    .webgl-unavailable-notice {
-      display: none;
-      font-size: 11px;
-      color: var(--muted);
-      text-align: center;
-      padding: 12px;
-    }
+    /* NOTE: curtains.js WebGL distortion was removed from painting images.
+       The artwork is complete and should be presented without modification.
+       WebGL / displacement effects belong on UI elements (backgrounds, section
+       dividers, the page chrome) — not on the paintings themselves. */
   </style>
 </head>
 <body>
@@ -59,9 +41,6 @@
     </filter>
     <rect width="100%" height="100%" filter="url(#grain-filter)"/>
   </svg>
-
-  <!-- WebGL canvas — curtains.js renders into this -->
-  <div id="curtains-canvas" aria-hidden="true"></div>
 
   <nav class="site-nav">
     <a href="index.html" class="site-nav__logo">Your Studio</a>
@@ -89,19 +68,11 @@
   <!-- Shared artwork data — sets window.ARTWORKS -->
   <script src="data/artworks.js"></script>
 
-  <!-- curtains.js — WebGL hover distortion via GLSL shaders (optional) -->
-  <!-- Docs: https://www.curtainsjs.com -->
-  <!-- Toggle ENABLE_WEBGL below to disable if not needed -->
-  <script src="https://cdn.jsdelivr.net/npm/curtainsjs@8.1.6/dist/curtains.umd.min.js"></script>
-
   <!-- Lenis smooth scroll -->
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
 
   <script>
     // ─── Config ───────────────────────────────────────────────────────────────
-    // Set to false to disable WebGL entirely (falls back to CSS hover)
-    const ENABLE_WEBGL = true;
-
     // Worker API base URL — set to your Cloudflare Worker URL after deploy
     // Local dev: use 'http://localhost:8787' (wrangler dev)
     const API_BASE = 'https://your-worker.your-name.workers.dev';
@@ -129,10 +100,6 @@
       }
 
       renderGallery();
-
-      if (ENABLE_WEBGL) {
-        initWebGL();
-      }
     }
 
     // ─── Render gallery cards ─────────────────────────────────────────────────
@@ -213,107 +180,6 @@
     function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
     requestAnimationFrame(raf);
     window.__lenis = lenis;
-
-    // ─── curtains.js WebGL hover distortion ───────────────────────────────────
-    // Each painting card gets a WebGL plane that displaces on mouse hover.
-    // Falls back silently to CSS transform if WebGL is unavailable.
-    //
-    // Shader: vertex distortion driven by mouse proximity and a sine wave.
-    // The closer the cursor, the more the mesh vertices bend.
-    function initWebGL() {
-      const vs = `
-        precision mediump float;
-        attribute vec3 aVertexPosition;
-        attribute vec2 aTextureCoord;
-        uniform mat4 uMVMatrix;
-        uniform mat4 uPMatrix;
-        uniform mat2 uTextureMatrix0;
-        varying vec3 vVertexPosition;
-        varying vec2 vTextureCoord;
-        uniform float uTime;
-        uniform vec2 uMousePos;   /* 0–1 UV coordinates */
-        uniform float uIntensity; /* 0 = no distortion, 1 = full */
-
-        void main() {
-          vec3 pos = aVertexPosition;
-          float dist = distance(aTextureCoord, uMousePos);
-          /* Ripple: sin wave from mouse center, decaying with distance */
-          pos.z += sin(dist * 25.0 - uTime * 2.0) * 0.04 * uIntensity * max(0.0, 1.0 - dist * 2.5);
-          gl_Position = uPMatrix * uMVMatrix * vec4(pos, 1.0);
-          vTextureCoord = (uTextureMatrix0 * aTextureCoord.st).xy;
-          vVertexPosition = pos;
-        }
-      `;
-
-      const fs = `
-        precision mediump float;
-        varying vec3 vVertexPosition;
-        varying vec2 vTextureCoord;
-        uniform sampler2D uSampler0;
-
-        void main() {
-          gl_FragColor = texture2D(uSampler0, vTextureCoord);
-        }
-      `;
-
-      let curtains;
-      try {
-        curtains = new Curtains({ container: 'curtains-canvas', autoResize: true });
-
-        // If Curtains fails to get a WebGL context, it fires an error
-        curtains.onError(() => {
-          console.warn('curtains.js: WebGL not available — using CSS hover');
-        });
-
-        document.body.classList.add('webgl-active');
-      } catch (e) {
-        console.warn('curtains.js init failed:', e);
-        return;
-      }
-
-      const artworkImgs = document.querySelectorAll('.painting-card__image-wrap img');
-      let time = 0;
-
-      artworkImgs.forEach(img => {
-        const plane = curtains.addPlane(img, {
-          vertexShader: vs,
-          fragmentShader: fs,
-          widthSegments: 20,
-          heightSegments: 20,
-          uniforms: {
-            time:      { name: 'uTime',      type: '1f', value: 0 },
-            mousePos:  { name: 'uMousePos',  type: '2f', value: [0.5, 0.5] },
-            intensity: { name: 'uIntensity', type: '1f', value: 0 },
-          },
-        });
-
-        if (!plane) return;
-
-        const wrap = img.closest('.painting-card__image-wrap');
-
-        // Animate intensity on hover
-        let targetIntensity = 0;
-        let currentIntensity = 0;
-
-        wrap.addEventListener('mouseenter', () => { targetIntensity = 1; });
-        wrap.addEventListener('mouseleave', () => { targetIntensity = 0; });
-
-        wrap.addEventListener('mousemove', e => {
-          const rect = wrap.getBoundingClientRect();
-          plane.uniforms.mousePos.value = [
-            (e.clientX - rect.left) / rect.width,
-            1 - (e.clientY - rect.top) / rect.height,
-          ];
-        });
-
-        plane.onRender(() => {
-          time += 0.015;
-          currentIntensity += (targetIntensity - currentIntensity) * 0.07;
-          plane.uniforms.time.value = time;
-          plane.uniforms.intensity.value = currentIntensity;
-        });
-      });
-    }
 
     // ─── Start ────────────────────────────────────────────────────────────────
     init();
