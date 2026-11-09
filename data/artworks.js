@@ -9,7 +9,7 @@ window.ARTWORKS = [
     medium: 'Oil on linen, original',
     year: '2024',
     size: '21 × 30 cm',
-    price: 420,
+    price: 650,
     description: 'Replace this with your painting\'s description. Write in present tense, as if the painting is a living thing. Describe what it holds, not what it depicts. This text appears on the detail page.',
     note: null,                   // optional short note shown under price
     images: [

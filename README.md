@@ -68,7 +68,7 @@ window.ARTWORKS = [
     medium: 'Oil on linen, original',
     year: '2024',
     size: '21 × 30 cm',
-    price: 420,
+    price: 650,
     description: 'Write about this painting in present tense.',
     note: null,                     // optional note shown under price
     images: [
@@ -367,7 +367,7 @@ window.ARTWORKS = [
     medium: 'Oil on linen, original',
     year: '2024',
     size: '21 × 30 cm',
-    price: 420,
+    price: 650,
     description: 'Your description here.',
     note: null,
     images: ['images/painting-slug-1.jpg', 'images/painting-slug-2.jpg'],
@@ -443,6 +443,6 @@ cd _worker && wrangler dev
 
 ## Credits
 
-Built from the stack powering [melancholija.com](https://melancholija.com) — an independent dark art gallery by Arune Rutkute.
+Built and battle-tested on a real independent art gallery selling original paintings directly to collectors.
 
 MIT License.

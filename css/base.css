@@ -10,11 +10,11 @@
 
 /* ── Tokens ───────────────────────────────────────────────────────────────── */
 :root {
-  /* Color */
-  --bg:          #f4f1ec;      /* warm off-white — the "paper" */
-  --fg:          #1c1b18;      /* near-black */
-  --accent:      #5c4a7a;      /* muted violet — replace with your brand color */
-  --muted:       #8a7f74;      /* warm mid-grey for secondary text */
+  /* Color — CHANGE THESE to your own palette */
+  --bg:          #f0f2f0;      /* cool off-white — replace with your paper tone */
+  --fg:          #1a1c1a;      /* near-black */
+  --accent:      #3a5c4a;      /* muted forest green — replace with your brand color */
+  --muted:       #7a877a;      /* cool mid-grey for secondary text */
   --border:      rgba(28, 27, 24, 0.09);
   --sold-bg:     #1c1b18;
   --sold-fg:     #f4f1ec;
